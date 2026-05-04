@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나의 의사 결정 유형은?</title>
+<link rel="stylesheet" href="/d_contents/01/common/common-entry.css">
+<style>
+:root {
+  --bg:#f0fdfa;--card:#ffffff;--card-hover:#f0fdfa;
+  --accent:#0d9488;--accent-dim:rgba(13,148,136,0.10);
+  --accent2:#14b8a6;--accent3:#0f766e;
+  --rational:#0d9488;--rational-bg:#f0fdfa;
+  --intuitive:#d97706;--intuitive-bg:#fffbeb;
+  --dependent:#7c3aed;--dependent-bg:#f5f3ff;
+  --text:#1a2e2a;--text-dim:#5f7a74;--border:#d1e6e2;
+}
+
+/* === 문항 페이지 === */
+.quiz-progress{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:14px}
+.quiz-progress-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.quiz-progress-label{font-size:13px;font-weight:700;color:var(--accent3)}
+.quiz-progress-count{font-size:12px;color:var(--text-dim)}
+.quiz-bar-bg{height:6px;background:#ccfbf1;border-radius:3px;overflow:hidden}
+.quiz-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .4s}
+
+.bubble{background:var(--card-hover);border:1px solid #ccfbf1;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
+.bubble-icon{font-size:24px;flex-shrink:0}
+.bubble-text{font-size:13px;line-height:1.6;color:var(--text-dim)}
+.bubble-text strong{color:var(--text)}
+
+.q-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+.q-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.q-number{flex-shrink:0;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-top:2px}
+.q-text{font-size:14px;line-height:1.6;color:var(--text)}
+
+.likert{display:flex;gap:6px;justify-content:center}
+.likert label{flex:1;max-width:70px}
+.likert input{display:none}
+.lk-btn{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;height:68px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;font-size:10px;color:var(--text-dim);text-align:center;line-height:1.3;padding:8px 2px 4px}
+.lk-num{font-size:18px;font-weight:700;color:var(--accent);margin-bottom:2px}
+.likert input:checked+.lk-btn{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+
+.page-dots{display:flex;justify-content:center;gap:8px;margin-top:14px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:all .2s}
+.dot.active{background:var(--accent);transform:scale(1.2)}
+.dot.done{background:var(--accent2)}
+
+.quiz-nav{margin-top:14px;display:none}
+.quiz-nav-inner{display:flex;justify-content:space-between;gap:12px}
+
+/* === 결과 고유 === */
+.type-badge{text-align:center;padding:20px 0 16px}
+.tb-emoji{font-size:48px}
+.tb-title{font-size:22px;font-weight:900;margin-top:4px}
+.tb-sub{font-size:12px;color:var(--text-dim);margin-top:4px}
+.type-rational .tb-title{color:var(--rational)}
+.type-intuitive .tb-title{color:var(--intuitive)}
+.type-dependent .tb-title{color:var(--dependent)}
+
+.score-row{margin-bottom:10px}
+.score-row-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.score-label{font-size:13px;color:var(--text);display:flex;align-items:center;gap:6px}
+.score-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.score-val{font-size:14px;font-weight:700}
+.score-track{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.score-bar-fill.rational{background:var(--rational)}
+.score-bar-fill.intuitive{background:var(--intuitive)}
+.score-bar-fill.dependent{background:var(--dependent)}
+
+.type-info{border-radius:var(--radius);padding:16px;margin-top:16px;border:1px solid var(--border)}
+.type-info h4{font-size:15px;margin-bottom:8px}
+.type-info .ti-def{font-size:13px;line-height:1.6;color:var(--text-dim);margin-bottom:12px}
+.ti-row{display:flex;gap:10px}
+.ti-box{flex:1;padding:12px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6}
+.ti-box h5{font-size:13px;margin-bottom:4px}
+.ti-box.pro{background:#f0fdf4;border:1px solid #bbf7d0}
+.ti-box.con{background:#fef2f2;border:1px solid #fecaca}
+
+/* === 통계 유형 목록 === */
+.type-stat-item{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;background:var(--card-hover)}
+.type-stat-item.has-members{cursor:pointer;user-select:none}
+.type-stat-item.has-members:hover{border-color:var(--accent)}
+.type-stat-row{display:flex;align-items:center;gap:8px}
+.type-stat-emoji{font-size:18px;flex-shrink:0}
+.type-stat-name{flex:1;font-size:13px;color:var(--text)}
+.type-stat-count{font-weight:700;font-size:14px;color:var(--accent);min-width:30px;text-align:right}
+.type-stat-toggle{font-size:10px;color:var(--text-dim);transition:transform .2s;flex-shrink:0}
+.type-stat-item.expanded .type-stat-toggle{transform:rotate(180deg)}
+.type-stat-members{display:none;font-size:12px;color:var(--accent);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);line-height:1.8}
+.type-stat-item.expanded .type-stat-members{display:block}
+
+/* 반응형 */
+@media(max-width:480px){
+  .likert{gap:4px}
+  .lk-btn{height:60px;font-size:9px;border-width:1.5px}
+  .lk-num{font-size:15px}
+  .ti-row{flex-direction:column;gap:8px}
+  .bubble{padding:12px;gap:8px}
+  .bubble-icon{font-size:20px}
+  .bubble-text{font-size:12px}
+}
+@media(max-width:360px){
+  .q-card{padding:16px 12px}
+  .q-text{font-size:13px}
+  .lk-btn{height:54px;font-size:8px;border-radius:6px}
+  .lk-num{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="screen active" id="entryScreen"></div>
+  <div id="user-badge"><span id="badge-code"></span><span class="badge-dot">·</span><span id="badge-school"></span><span class="badge-dot">·</span><span id="badge-nick"></span></div>
+
+  <!-- ═══ 활동 화면 ═══ -->
+  <div class="screen" id="activityScreen">
+    <div class="quiz-progress">
+      <div class="quiz-progress-top">
+        <span class="quiz-progress-label" id="progressLabel">1 / 6 페이지</span>
+        <span class="quiz-progress-count" id="progressCount">0 / 30 문항 완료</span>
+      </div>
+      <div class="quiz-bar-bg"><div class="quiz-bar-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+    <div class="bubble" id="quizBubble">
+      <span class="bubble-icon">🐶</span>
+      <span class="bubble-text" id="quizBubbleText"><strong>멍이오</strong>: 천천히 읽고 자신에게 가장 가까운 정도를 골라 봐!</span>
+    </div>
+    <div id="questionContainer"></div>
+    <div class="page-dots" id="pageDots"></div>
+    <div class="quiz-nav" id="quizNav">
+      <div class="quiz-nav-inner">
+        <button class="btn btn-secondary" id="btnPrev" onclick="prevPage()">← 이전</button>
+        <button class="btn btn-primary" id="btnNext" onclick="nextPage()" disabled>다음 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 결과 화면 ═══ -->
+  <div class="screen" id="resultScreen">
+    <div class="result-tabs">
+      <button class="result-tab active" data-tab="myResult" onclick="switchResultTab('myResult')">나의 결과</button>
+      <button class="result-tab" data-tab="groupStats" id="groupStatsTab" onclick="switchResultTab('groupStats')">우리 반 통계</button>
+      <button class="result-tab" data-tab="nationalStats" onclick="switchResultTab('nationalStats')">전체 통계</button>
+    </div>
+
+    <!-- 나의 결과 -->
+    <div class="result-content active" id="myResult">
+      <div class="result-card" id="result-card">
+        <div class="result-header"><h2>🧭 나의 의사 결정 유형</h2><div class="result-name" id="resultName"></div></div>
+        <div class="result-section">
+          <div class="type-badge" id="typeBadge"></div>
+          <div id="scoreBars"></div>
+        </div>
+        <div class="result-section" id="typeInfoCard"></div>
+      </div>
+      <div class="note" style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:12px;padding:12px;background:rgba(13,148,136,.04);border:1px solid var(--border);border-radius:var(--radius-sm)">
+        ※ 의사 결정 유형에는 정답이 없어요! 각 유형의 장점을 살리고, 상황에 맞게 유연하게 활용하는 것이 중요해요.
+      </div>
+      <div class="bot-comment" id="bot-comment"></div>
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="downloadResult()">📥 이미지 저장</button>
+        <button class="btn btn-secondary" onclick="location.reload()">🔄 다시 하기</button>
+        <button class="btn btn-secondary" onclick="goHome()">🏠 처음으로</button>
+      </div>
+    </div>
+
+    <!-- 우리 반 통계 -->
+    <div class="result-content" id="groupStats">
+      <div class="result-card">
+        <div class="result-section-title">📊 우리 반 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">참여자 수</span><span class="result-stat-value" id="group-participants">-</span></div>
+        <div class="result-stat-item"><span class="result-stat-label">제출 완료</span><span class="result-stat-value" id="group-submitted">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">🧭 우리 반 의사 결정 유형</div>
+        <div id="group-type-list"><div class="empty-state">새로고침을 눌러 불러오세요</div></div>
+      </div>
+      <div style="text-align:center;margin-top:12px"><button class="btn btn-secondary" id="refreshGroupBtn" onclick="loadGroupStats()">새로고침</button></div>
+    </div>
+
+    <!-- 전체 통계 -->
+    <div class="result-content" id="nationalStats">
+      <div class="result-card">
+        <div class="result-section-title">🌍 전체 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">전체 참여자</span><span class="result-stat-value" id="national-participants">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">🧭 전체 의사 결정 유형</div>
+        <div id="national-type-list"><div class="empty-state">새로고침을 눌러 불러오세요</div></div>
+      </div>
+      <div style="text-align:center;margin-top:12px"><button class="btn btn-secondary" id="refreshNationalBtn" onclick="loadNationalStats()">새로고침</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="/d_contents/01/common/common-entry.js"></script>
+<script>
+(function(){
+'use strict';
+
+// ═══ 문항 데이터 (Harren 의사결정 스타일 검사, 30문항) ═══
+var questions = [
+  "나는 의사 결정을 할 때 한 단계씩 체계적으로 한다.",
+  "나는 내 자신의 욕구에 따라 매우 독특하게 의사 결정을 한다.",
+  "나는 얻을 수 있는 정보를 수집하지 않고는 중요한 의사 결정은 거의 하지 않는다.",
+  "의사 결정을 할 때 친구들이 내 결정을 어떻게 생각할 것인가를 매우 중요시한다.",
+  "나는 의사 결정을 할 때, 이 의사 결정과 관련된 결과까지 고려한다.",
+  "나는 다른 사람의 도움 없이는 중요한 의사 결정을 하기가 힘들다.",
+  "나는 어려운 문제에 부딪히면 재빨리 결정을 내린다.",
+  "나는 의사 결정을 할 때, 내 자신의 즉각적인 느낌이나 감정에 따른다.",
+  "나는 내가 하고 싶은 것보다 다른 사람이 어떻게 생각하느냐에 영향을 받아 의사 결정을 한다.",
+  "어떤 의사 결정을 할 때, 나는 시간을 갖고 주의 깊게 생각해 본다.",
+  "나는 문제의 본질에 대해 순간적으로 떠오르는 생각에 의해 결정을 한다.",
+  "나는 친한 친구에게 먼저 이야기하지 않고는 의사 결정을 거의 하지 않는다.",
+  "나는 중대한 의사 결정 문제가 예상될 때, 계획하고 생각할 시간을 갖는다.",
+  "나는 의사 결정을 못한 채 미루는 경우가 많다.",
+  "나는 의사 결정을 하기 전에 사실을 확인하기 위해 관련된 정보들을 살펴본다.",
+  "나는 의사 결정에 관해 갑자기 생각이 떠오르면서 무엇을 해야 할지를 알게 된다.",
+  "어떤 중요한 일을 하기 전에 나는 신중하게 계획을 세운다.",
+  "의사 결정을 할 때 나는 다른 사람의 많은 격려와 지지를 필요로 한다.",
+  "나는 의사 결정을 할 때, 마음이 가장 끌리는 쪽으로 결정을 한다.",
+  "나는 인기를 떨어뜨릴 의사 결정은 별로 하고 싶지 않다.",
+  "나는 의사 결정을 할 때, 예감 또는 직감을 중요시한다.",
+  "나는 조급하게 결정을 내리지 않는데, 그 이유는 올바른 의사 결정임을 확신하고 싶기 때문이다.",
+  "어떤 의사 결정이 감정적으로 나에게 만족스러우면 나는 그 결정을 올바른 것으로 본다.",
+  "올바른 의사 결정을 할 수 있는 능력에 자신이 없기 때문에 주로 다른 사람의 의견에 따른다.",
+  "종종 내가 내린 각각의 의사 결정을 일정한 목표를 향한 진보의 단계들로 본다.",
+  "내가 내리는 의사 결정을 친구들이 지지해 주지 않으면 그 결정에 대해 확신을 갖지 못한다.",
+  "의사 결정을 하기 전 그 결정을 함으로써 생기는 결과에 대해 가능한 한 많이 알고 싶다.",
+  "나는 '이것이다'라는 느낌에 의해 결정을 내릴 때가 종종 있다.",
+  "나는 주위 사람들이 바라는 방향으로 의사 결정을 한다.",
+  "정보를 수집하거나 검토하는 과정보다 떠오르는 생각대로 결정을 내리는 경우가 자주 있다."
+];
+
+// 유형별 문항 인덱스 (1-indexed → 배열 접근 시 -1)
+var rationalQ  = [1,3,5,10,13,15,17,22,25,27];
+var intuitiveQ = [2,7,8,11,16,19,21,23,28,30];
+var dependentQ = [4,6,9,12,14,18,20,24,26,29];
+
+// 중학교 축소 문항 — 유형별 대표 5문항 (0-indexed)
+// 합리적: Q1(체계적), Q5(결과고려), Q10(주의깊게), Q15(사실확인), Q17(신중계획)
+var middleRational  = [0, 4, 9, 14, 16];
+// 직관적: Q7(재빨리), Q8(즉각감정), Q11(순간생각), Q19(마음끌림), Q28(이것이다)
+var middleIntuitive = [6, 7, 10, 18, 27];
+// 의존적: Q4(친구의견), Q6(도움필요), Q9(타인영향), Q14(미루기), Q18(격려필요)
+var middleDependent = [3, 5, 8, 13, 17];
+
+var typeData = {
+  rational: {
+    emoji:'🧠', name:'합리적 유형', color:'#0d9488', bgClass:'rational-bg',
+    def:'의사 결정 시 자신의 능력과 관심사를 고려하여 논리적이고 체계적으로 문제에 접근하여 결정을 내리기까지 많은 관련 정보를 수집하고 분석하는 유형',
+    pro:'논리적이고, 심리적 독립과 성장에 도움이 되며 실패율이 낮음',
+    con:'의사 결정이 오래 걸리고 돌발 상황에 대처하기 어려울 수 있음'
+  },
+  intuitive: {
+    emoji:'⚡', name:'직관적 유형', color:'#d97706', bgClass:'intuitive-bg',
+    def:'직감이나 예감에 따라 결정하는 경향이 강하고, 문제에 대한 정보 탐색이나 논리적인 평가 과정을 거치지 않고 현재의 감정에 치우쳐 의사 결정을 하는 유형',
+    pro:'의사 결정이 빠르고, 스스로의 선택에 대한 책임을 짐',
+    con:'의사 결정에 일관성이 없어 장기 계획 수립 시 적합하지 않음'
+  },
+  dependent: {
+    emoji:'🤝', name:'의존적 유형', color:'#7c3aed', bgClass:'dependent-bg',
+    def:'의사 결정 과정에서 다른 사람의 영향을 많이 받고 나의 판단보다 타인의 의견을 우선시하여 의사 결정이 수동적인 유형',
+    pro:'전문가의 조언에 따른 수용적인 태도로 실패 확률이 적음, 가족과의 마찰이 적음',
+    con:'실패했을 때 남의 탓을 할 확률이 높고 자신 있게 일 처리를 하지 못함'
+  }
+};
+
+// 고등학교 6페이지용 버블
+var bubbleMessagesHigh = [
+  {icon:'🐶',name:'멍이오',text:'천천히 읽고 자신에게 가장 가까운 정도를 골라 봐!'},
+  {icon:'🤖',name:'이오봇',text:'벌써 2페이지! 평소 내 모습을 떠올리며 답해 보세요.'},
+  {icon:'🐱',name:'냥이오',text:'절반 지났어요! 정답은 없으니 솔직하게 응답해 주세요.'},
+  {icon:'🐶',name:'멍이오',text:'잘하고 있어! 조금만 더 힘내자!'},
+  {icon:'🤖',name:'이오봇',text:'거의 다 왔어요! 마지막까지 집중!'},
+  {icon:'🐱',name:'냥이오',text:'마지막 페이지예요! 끝까지 화이팅!'}
+];
+// 중학교 3페이지용 버블
+var bubbleMessagesMiddle = [
+  {icon:'🐶',name:'멍이오',text:'천천히 읽고 자신에게 가장 가까운 정도를 골라 봐!'},
+  {icon:'🤖',name:'이오봇',text:'절반 왔어요! 정답은 없으니 솔직하게 응답해 주세요.'},
+  {icon:'🐱',name:'냥이오',text:'마지막 페이지예요! 끝까지 화이팅!'}
+];
+
+// ═══ 상태 ═══
+var currentPage = 0;
+var totalPages = 6;
+var perPage = 5;
+var totalQ = 30;
+var maxScore = 50;
+var answers = new Array(30).fill(0);
+var shuffledIndices = [];  // 셔플된 원본 문항 인덱스 (0-indexed)
+var activeBubbles = bubbleMessagesHigh;
+
+// ═══ 유틸 ═══
+function escHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// Fisher-Yates 셔플
+function shuffle(arr){
+  for(var i=arr.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    var tmp=arr[i];arr[i]=arr[j];arr[j]=tmp;
+  }
+  return arr;
+}
+
+// ═══ 활동 시작 ═══
+function startActivity(){
+  EoEntry.showScreen('activity');
+  currentPage=0;
+  answers=new Array(30).fill(0);
+
+  // context 기반 문항 수 분기
+  var ctx=EoEntry.state.context;
+  if(ctx==='middle'){
+    // 중학교: 유형별 5문항씩 총 15문항
+    shuffledIndices=middleRational.concat(middleIntuitive,middleDependent);
+    totalQ=15; totalPages=3; maxScore=25;
+    activeBubbles=bubbleMessagesMiddle;
+  } else {
+    // 고등학교(기본): 전체 30문항
+    shuffledIndices=[];
+    for(var i=0;i<30;i++) shuffledIndices.push(i);
+    totalQ=30; totalPages=6; maxScore=50;
+    activeBubbles=bubbleMessagesHigh;
+  }
+
+  // 문항 순서 랜덤화
+  shuffle(shuffledIndices);
+
+  renderPage(0);
+}
+
+// ═══ 페이지 렌더링 ═══
+function renderPage(page){
+  currentPage=page;
+  var container=document.getElementById('questionContainer');
+  container.innerHTML='';
+  var start=page*perPage;
+  var end=Math.min(start+perPage,totalQ);
+
+  for(var di=start;di<end;di++){
+    var origIdx=shuffledIndices[di];  // 원본 문항 인덱스
+    var displayNum=di+1;              // 표시용 번호
+    var card=document.createElement('div');
+    card.className='q-card';
+    card.style.animationDelay=((di-start)*0.06)+'s';
+    card.innerHTML=
+      '<div class="q-top"><span class="q-number">Q'+displayNum+'</span><div class="q-text">'+escHtml(questions[origIdx])+'</div></div>'+
+      '<div class="likert" id="likert'+origIdx+'">'+
+      [1,2,3,4,5].map(function(v){
+        var labels=['전혀<br>아니다','거의<br>아니다','보통<br>이다','그렇다','아주<br>그렇다'];
+        return '<label><input type="radio" name="q'+origIdx+'" value="'+v+'" '+(answers[origIdx]===v?'checked':'')+' onchange="window._onAnswer('+origIdx+','+v+')">'+
+          '<span class="lk-btn"><span class="lk-num">'+v+'</span>'+labels[v-1]+'</span></label>';
+      }).join('')+
+      '</div>';
+    container.appendChild(card);
+  }
+
+  var msg=activeBubbles[Math.min(page,activeBubbles.length-1)];
+  document.getElementById('quizBubble').querySelector('.bubble-icon').textContent=msg.icon;
+  document.getElementById('quizBubbleText').innerHTML='<strong>'+msg.name+'</strong>: '+msg.text;
+
+  updateProgress();
+  updateDots();
+  updateNav();
+  document.getElementById('quizNav').style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+window._onAnswer=function(idx,val){
+  answers[idx]=val;
+  updateProgress();
+  updateNav();
+};
+
+function updateProgress(){
+  var answered=0;
+  for(var i=0;i<shuffledIndices.length;i++){if(answers[shuffledIndices[i]]>0)answered++}
+  document.getElementById('progressLabel').textContent=(currentPage+1)+' / '+totalPages+' 페이지';
+  document.getElementById('progressCount').textContent=answered+' / '+totalQ+' 문항 완료';
+  document.getElementById('progressFill').style.width=(answered/totalQ*100)+'%';
+}
+
+function updateDots(){
+  var el=document.getElementById('pageDots');
+  el.innerHTML='';
+  for(var i=0;i<totalPages;i++){
+    var dot=document.createElement('div');
+    dot.className='dot';
+    if(i===currentPage)dot.classList.add('active');
+    else if(isPageComplete(i))dot.classList.add('done');
+    el.appendChild(dot);
+  }
+}
+
+function isPageComplete(page){
+  var start=page*perPage;
+  var end=Math.min(start+perPage,totalQ);
+  for(var i=start;i<end;i++){if(answers[shuffledIndices[i]]===0)return false}
+  return true;
+}
+
+function updateNav(){
+  document.getElementById('btnPrev').style.visibility=currentPage===0?'hidden':'visible';
+  var isLast=currentPage===totalPages-1;
+  var allDone=shuffledIndices.every(function(idx){return answers[idx]>0});
+  var pageComplete=isPageComplete(currentPage);
+  var btn=document.getElementById('btnNext');
+  if(isLast){btn.textContent='결과 보기 🎉';btn.disabled=!allDone}
+  else{btn.textContent='다음 →';btn.disabled=!pageComplete}
+}
+
+window.prevPage=function(){if(currentPage>0)renderPage(currentPage-1)};
+var _finishing=false;
+window.nextPage=function(){
+  if(currentPage<totalPages-1){renderPage(currentPage+1)}
+  else if(!_finishing){_finishing=true;finishActivity()}
+};
+
+// ═══ 결과 계산 및 표시 ═══
+function finishActivity(){
+  EoEntry.showScreen('result');
+  if(EoEntry.state.mode!=='group'){var gt=document.getElementById('groupStatsTab');if(gt)gt.style.display='none'}
+  showMyResult();
+  saveResult();
+}
+
+function showMyResult(){
+  var s=EoEntry.state;
+  document.getElementById('resultName').textContent=(s.nickname||'')+'의 검사 결과';
+
+  // 점수 계산 — 비활성 문항의 answers는 0이므로 자연스럽게 제외됨
+  var rScore=rationalQ.reduce(function(sum,q){return sum+answers[q-1]},0);
+  var iScore=intuitiveQ.reduce(function(sum,q){return sum+answers[q-1]},0);
+  var dScore=dependentQ.reduce(function(sum,q){return sum+answers[q-1]},0);
+
+  var topType='rational',topScore=rScore;
+  if(iScore>topScore){topType='intuitive';topScore=iScore}
+  if(dScore>topScore){topType='dependent';topScore=dScore}
+
+  var td=typeData[topType];
+
+  // 유형 뱃지
+  var badgeEl=document.getElementById('typeBadge');
+  badgeEl.className='type-badge type-'+topType;
+  badgeEl.innerHTML='<div class="tb-emoji">'+td.emoji+'</div><div class="tb-title">'+td.name+'</div><div class="tb-sub">나의 주요 의사 결정 유형</div>';
+
+  // 점수 바
+  var scores=[
+    {key:'rational',label:'합리적 유형',score:rScore,color:'#0d9488'},
+    {key:'intuitive',label:'직관적 유형',score:iScore,color:'#d97706'},
+    {key:'dependent',label:'의존적 유형',score:dScore,color:'#7c3aed'}
+  ];
+  document.getElementById('scoreBars').innerHTML=scores.map(function(sc){
+    return '<div class="score-row"><div class="score-row-top"><span class="score-label"><span class="score-dot" style="background:'+sc.color+'"></span>'+sc.label+'</span><span class="score-val" style="color:'+sc.color+'">'+sc.score+'점</span></div><div class="score-track"><div class="score-bar-fill '+sc.key+'" id="bar_'+sc.key+'"></div></div></div>';
+  }).join('');
+
+  requestAnimationFrame(function(){
+    setTimeout(function(){
+      scores.forEach(function(sc){
+        document.getElementById('bar_'+sc.key).style.width=(sc.score/maxScore*100)+'%';
+      });
+    },200);
+  });
+
+  // 유형 정보 카드
+  document.getElementById('typeInfoCard').innerHTML=
+    '<div class="type-info" style="background:var(--'+td.bgClass+')">'+
+    '<h4>'+td.emoji+' '+td.name+'</h4>'+
+    '<div class="ti-def">'+td.def+'</div>'+
+    '<div class="ti-row"><div class="ti-box pro"><h5>👍 장점</h5><p>'+td.pro+'</p></div><div class="ti-box con"><h5>⚠️ 단점</h5><p>'+td.con+'</p></div></div></div>';
+
+  // 봇 코멘트
+  document.getElementById('bot-comment').innerHTML=
+    '<strong>'+escHtml(s.nickname)+'</strong> 님의 주요 의사 결정 유형은 <strong>'+td.name+'</strong>이야! '+td.emoji+'<br><br>'+
+    '합리적('+rScore+'점) · 직관적('+iScore+'점) · 의존적('+dScore+'점)으로 세 유형의 점수를 함께 살펴보면 나만의 의사 결정 스타일을 더 잘 이해할 수 있어.';
+
+  // 결과 데이터 저장용
+  window._resultData={topType:topType,rational:rScore,intuitive:iScore,dependent:dScore};
+}
+
+// ═══ 서버 저장 ═══
+function saveResult(){
+  var rd=window._resultData;
+  try{
+    fetch(EoEntry.API_BASE+'/result.php?action=submit',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        participant_id:EoEntry.state.participantId,
+        activity_id:'decision_style',
+        group_id:EoEntry.state.groupId||null,
+        result_data:{topType:rd.topType,rational:rd.rational,intuitive:rd.intuitive,dependent:rd.dependent,timestamp:new Date().toISOString()}
+      })
+    });
+  }catch(e){console.error('Save error:',e)}
+}
+
+// ═══ 통계 ═══
+var TYPE_LIST=[
+  {key:'rational',emoji:'🧠',name:'합리적 유형'},
+  {key:'intuitive',emoji:'⚡',name:'직관적 유형'},
+  {key:'dependent',emoji:'🤝',name:'의존적 유형'}
+];
+
+function buildTypeStatHtml(type,count,members){
+  var hasMembers=members&&members.length>0;
+  var clickAttr=hasMembers?' onclick="this.classList.toggle(\'expanded\')"':'';
+  var arrowHtml=hasMembers?'<span class="type-stat-toggle">▼</span>':'';
+  var membersHtml=hasMembers?'<div class="type-stat-members">👤 '+members.join(', ')+'</div>':'';
+  return '<div class="type-stat-item'+(hasMembers?' has-members':'')+'"'+clickAttr+'>'+
+    '<div class="type-stat-row"><span class="type-stat-emoji">'+type.emoji+'</span><span class="type-stat-name">'+type.name+'</span><span class="type-stat-count">'+count+'명</span>'+arrowHtml+'</div>'+
+    membersHtml+'</div>';
+}
+
+window.loadGroupStats=function(){
+  EoEntry.refreshCooldown('refreshGroupBtn');
+  fetch(EoEntry.API_BASE+'/result.php?action=group&group_id='+EoEntry.state.groupId+'&activity_id=decision_style')
+    .then(function(r){return r.json()})
+    .then(function(data){
+      document.getElementById('group-participants').textContent=data.total_participants+'명';
+      document.getElementById('group-submitted').textContent=data.submitted_count+'명';
+      var types=data.decision_types||{};
+      var html='';
+      TYPE_LIST.forEach(function(t){
+        var d=types[t.key]||{count:0,members:[]};
+        html+=buildTypeStatHtml(t,d.count||0,d.members||[]);
+      });
+      document.getElementById('group-type-list').innerHTML=html;
+    })
+    .catch(function(){document.getElementById('group-type-list').innerHTML='<div class="empty-state">불러오기 실패</div>'});
+};
+
+window.loadNationalStats=function(){
+  EoEntry.refreshCooldown('refreshNationalBtn');
+  fetch(EoEntry.API_BASE+'/result.php?action=national&activity_id=decision_style')
+    .then(function(r){return r.json()})
+    .then(function(data){
+      document.getElementById('national-participants').textContent=data.total_participants+'명';
+      var types=data.decision_types||{};
+      var html='';
+      TYPE_LIST.forEach(function(t){
+        html+=buildTypeStatHtml(t,types[t.key]||0,null);
+      });
+      document.getElementById('national-type-list').innerHTML=html;
+    })
+    .catch(function(){document.getElementById('national-type-list').innerHTML='<div class="empty-state">불러오기 실패</div>'});
+};
+
+window.switchResultTab=function(tabName){
+  document.querySelectorAll('.result-tab').forEach(function(t){t.classList.remove('active')});
+  document.querySelectorAll('.result-content').forEach(function(c){c.classList.remove('active')});
+  document.querySelector('[data-tab="'+tabName+'"]').classList.add('active');
+  document.getElementById(tabName).classList.add('active');
+};
+
+window.downloadResult=function(){
+  try{
+    var badge=document.getElementById('user-badge');
+    var prevBadge=badge?badge.style.display:'';
+    if(badge)badge.style.display='none';
+    html2canvas(document.getElementById('result-card'),{
+      backgroundColor:'#f0fdfa',scale:(window.devicePixelRatio||1)*2,useCORS:true,logging:false,
+      scrollX:0,scrollY:-window.scrollY
+    }).then(function(canvas){
+      if(badge)badge.style.display=prevBadge;
+      var link=document.createElement('a');
+      link.download='의사결정유형_'+EoEntry.state.nickname+'.png';
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+    });
+  }catch(e){alert('이미지 저장에 실패했습니다.')}
+};
+
+window.goHome=function(){
+  var ctx=EoEntry.state.context;
+  if(ctx==='high')location.href='/d_contents/01/high/';
+  else if(ctx==='middle')location.href='/d_contents/01/middle/';
+  else location.href='/d_contents/01/middle/';
+};
+
+// ═══ EoEntry 초기화 ═══
+EoEntry.init({
+  activityId:'decision_style',
+  title:'🧭 나의 의사 결정 유형은?',
+  subtitle:'Harren 의사결정 스타일 검사로 나의 유형을 알아보세요!',
+  onStart:function(){startActivity()}
+});
+
+})();
+</script>
+</body>
+</html>

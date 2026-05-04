@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🚀 드림팀 마스</title>
+<link rel="stylesheet" href="/d_contents/01/common/common-entry.css">
+<style>
+/* === 활동 전용 변수 === */
+:root {
+    --mars: #e8512f;
+    --mars-dim: rgba(232,81,47,0.1);
+    --mars-glow: rgba(232,81,47,0.2);
+    --space: #0f0e2a;
+    --star: #ffd700;
+}
+
+/* === 스크린 기본 === */
+.screen { display:none; min-height:100vh; padding:20px; max-width:520px; margin:0 auto; }
+.screen.active { display:flex; flex-direction:column; }
+
+/* === 배경 설명 (시네마틱) === */
+#introScreen {
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1035 50%, #2d1b4e 100%);
+    min-height: 100vh;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px 24px;
+    position: relative;
+    overflow: hidden;
+}
+#introScreen::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(2px 2px at 20% 30%, #fff 0%, transparent 100%),
+                radial-gradient(2px 2px at 40% 70%, #fff 0%, transparent 100%),
+                radial-gradient(1px 1px at 60% 20%, #fff 0%, transparent 100%),
+                radial-gradient(1px 1px at 80% 60%, #fff 0%, transparent 100%),
+                radial-gradient(1px 1px at 10% 80%, #fff 0%, transparent 100%),
+                radial-gradient(2px 2px at 70% 10%, #fff 0%, transparent 100%),
+                radial-gradient(1px 1px at 90% 40%, #fff 0%, transparent 100%),
+                radial-gradient(1px 1px at 50% 90%, #fff 0%, transparent 100%);
+    opacity: 0.4;
+    pointer-events: none;
+}
+.intro-content { position: relative; z-index: 1; max-width: 400px; }
+.intro-mars { font-size: 80px; margin-bottom: 24px; }
+.intro-line {
+    color: #e2e8f0;
+    font-size: 16px;
+    line-height: 1.8;
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.8s ease;
+}
+.intro-line.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.intro-line.highlight {
+    color: var(--star);
+    font-weight: 700;
+    font-size: 18px;
+}
+.intro-line.role {
+    color: #a78bfa;
+    font-size: 14px;
+    background: rgba(167,139,250,0.1);
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(167,139,250,0.2);
+}
+#introStartBtn {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.8s ease;
+    margin-top: 32px;
+    padding: 16px 40px;
+    background: linear-gradient(135deg, var(--mars), #ff6b3d);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-size: 18px;
+    font-family: 'Jua', cursive;
+    cursor: pointer;
+    box-shadow: 0 4px 20px var(--mars-glow);
+}
+#introStartBtn.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+#introStartBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px var(--mars-glow); }
+
+/* === 진행 바 === */
+.phase-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+.phase-dot {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.3s;
+}
+.phase-dot.done { background: var(--accent); }
+.phase-dot.current { background: var(--mars); }
+
+.phase-header {
+    text-align: center;
+    margin-bottom: 16px;
+}
+.phase-title {
+    font-family: 'Jua', cursive;
+    font-size: 22px;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+.phase-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+/* === 서류심사 카드 격자 === */
+.candidate-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+}
+@media (max-width: 480px) {
+    .candidate-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.cand-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    user-select: none;
+}
+.cand-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.cand-card.selected {
+    border-color: var(--mars);
+    background: var(--mars-dim);
+    box-shadow: 0 2px 8px var(--mars-glow);
+}
+.cand-card .emoji { font-size: 28px; display: block; margin-bottom: 4px; }
+.cand-card .name { font-size: 11px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.cand-card .check {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
+    background: var(--mars);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 11px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.cand-card.selected .check { display: flex; }
+
+/* === 말풍선 === */
+.speech-bubble {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 8px 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    animation: fadeInUp 0.3s ease;
+    position: relative;
+}
+.speech-bubble.show { display: block; }
+.speech-bubble .sb-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 700;
+    color: var(--mars);
+}
+.speech-bubble .sb-text {
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+/* === 선택 카운터 === */
+.select-counter {
+    text-align: center;
+    padding: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.counter-text {
+    font-size: 14px;
+    font-weight: 600;
+}
+.counter-num {
+    color: var(--mars);
+    font-family: 'Jua', cursive;
+    font-size: 20px;
+}
+
+/* === 면접 질문 선택 === */
+.question-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 16px 0;
+}
+.q-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    line-height: 1.6;
+}
+.q-card:hover { border-color: var(--accent); }
+.q-card.selected { border-color: var(--mars); background: var(--mars-dim); }
+.q-card .q-num {
+    font-family: 'Jua', cursive;
+    color: var(--mars);
+    font-size: 16px;
+    margin-bottom: 6px;
+}
+
+/* === 면접 답변 카드 (가로 배치) === */
+.answer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0;
+}
+.ans-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+.ans-card:hover { border-color: var(--accent); }
+.ans-card.selected { border-color: var(--mars); background: var(--mars-dim); }
+.ans-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 48px;
+    flex-shrink: 0;
+    padding-top: 2px;
+}
+.ans-left .emoji { font-size: 24px; }
+.ans-left .name { font-weight: 700; font-size: 11px; margin-top: 2px; text-align: center; white-space: nowrap; }
+.ans-text {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    flex: 1;
+}
+
+/* === 시나리오 === */
+.scenario-box {
+    background: linear-gradient(135deg, rgba(232,81,47,0.05), rgba(255,107,61,0.02));
+    border: 1px solid rgba(232,81,47,0.2);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+.scenario-icon { font-size: 40px; margin-bottom: 8px; }
+.scenario-title {
+    font-family: 'Jua', cursive;
+    font-size: 18px;
+    color: var(--mars);
+    margin-bottom: 8px;
+}
+.scenario-situation {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.7;
+}
+.scenario-progress {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.opinion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0;
+}
+.op-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.op-card:hover { border-color: var(--mars); transform: translateY(-1px); }
+.op-card.chosen {
+    border-color: var(--mars);
+    background: var(--mars-dim);
+    transform: scale(1.02);
+}
+.op-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.op-header .emoji { font-size: 22px; }
+.op-header .name { font-weight: 700; font-size: 13px; }
+.op-text {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+}
+
+/* === 결과 화면 === */
+.team-display {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+}
+@media (max-width: 400px) {
+    .team-display { grid-template-columns: repeat(2, 1fr); }
+}
+.team-member {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+}
+.team-member .emoji { font-size: 28px; }
+.team-member .name { font-size: 12px; font-weight: 600; margin: 4px 0 2px; }
+.team-member .trait-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    display: inline-block;
+    margin-bottom: 2px;
+}
+.team-member .trait-sub {
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    display: inline-block;
+    opacity: 0.7;
+}
+.trait-cooperation { background: rgba(59,130,246,0.1); color: #3b82f6; }
+.trait-reliability { background: rgba(16,185,129,0.1); color: #10b981; }
+.trait-creativity { background: rgba(168,85,247,0.1); color: #a855f7; }
+.trait-challenge { background: rgba(239,68,68,0.1); color: #ef4444; }
+.trait-communication { background: rgba(245,158,11,0.1); color: #f59e0b; }
+
+.top-trait-box {
+    text-align: center;
+    padding: 20px;
+    background: var(--mars-dim);
+    border: 1px solid rgba(232,81,47,0.2);
+    border-radius: 16px;
+    margin: 16px 0;
+}
+.top-trait-icon { font-size: 40px; margin-bottom: 8px; }
+.top-trait-name {
+    font-family: 'Jua', cursive;
+    font-size: 22px;
+    color: var(--mars);
+    margin-bottom: 4px;
+}
+.top-trait-label {
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.trait-bars {
+    margin: 16px 0;
+}
+.trait-bar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.trait-bar-label {
+    min-width: 70px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: right;
+}
+.trait-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.trait-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+.trait-bar-count {
+    min-width: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+}
+
+.feedback-box {
+    background: var(--card);
+    border-left: 4px solid var(--mars);
+    border-radius: 0 14px 14px 0;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-dim);
+}
+
+/* === 통계 카드 === */
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.stat-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+.pop-candidate {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+.pop-candidate:last-child { border-bottom: none; }
+.pop-rank { font-size: 16px; min-width: 28px; text-align: center; }
+.pop-info { flex: 1; }
+.pop-name { font-size: 13px; font-weight: 600; }
+.pop-count { font-size: 12px; color: var(--text-dim); }
+
+/* === 액션 버튼 === */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    justify-content: center;
+}
+.action-buttons .btn {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    justify-content: center;
+    text-align: center;
+}
+
+/* === 애니메이션 === */
+@keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+.fade-in { animation: fadeInUp 0.4s ease; }
+
+/* === 모바일 대응 === */
+@media (max-width: 400px) {
+    .phase-title { font-size: 18px; }
+    .intro-mars { font-size: 60px; }
+    .intro-line { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 세션 뱃지 -->
+<div id="user-badge">
+    <span id="badge-code"></span>
+    <span class="badge-dot">·</span>
+    <span id="badge-school"></span>
+    <span class="badge-dot">·</span>
+    <span id="badge-nick"></span>
+</div>
+
+<!-- 1. 초기 입력 화면 (EoEntry 자동 생성) -->
+<div id="entryScreen" class="screen active"></div>
+
+<!-- 2. 배경 설명 (시네마틱) -->
+<div id="introScreen" class="screen">
+    <div class="intro-content">
+        <div class="intro-mars">🚀</div>
+        <p class="intro-line" id="line1">2045년, 인류는 화성에 첫 정착지를 건설하기로 했습니다.</p>
+        <p class="intro-line" id="line2">낯선 행성, 예측 불가능한 위기, 그리고 제한된 자원.</p>
+        <p class="intro-line highlight" id="line3">이 임무의 성패는 단 하나에 달렸습니다 — 누구와 함께 가느냐.</p>
+        <p class="intro-line role" id="line4">당신은 우주기관 EOXA의 최종 선발 위원입니다.<br>20명의 후보 중 4명을 골라 화성 선발대를 꾸려 주세요.</p>
+        <button id="introStartBtn">선발 시작</button>
+    </div>
+</div>
+
+<!-- 3. 서류심사 (20→8) -->
+<div id="phase1Screen" class="screen">
+    <div class="phase-bar"><div class="phase-dot current"></div><div class="phase-dot"></div><div class="phase-dot"></div></div>
+    <div class="phase-header">
+        <div class="phase-title">서류심사</div>
+        <div class="phase-desc">함께 화성에 갈 후보 8명을 골라주세요</div>
+    </div>
+    <div id="candidateGrid" class="candidate-grid"></div>
+    <div id="speechBubble" class="speech-bubble">
+        <div class="sb-header"><span class="sb-emoji"></span> <span class="sb-name"></span></div>
+        <div class="sb-text"></div>
+    </div>
+    <div class="select-counter">
+        <span class="counter-text">선택한 후보</span>
+        <span class="counter-num"><span id="phase1Count">0</span> / 8</span>
+    </div>
+    <div style="text-align:center; margin-top:12px;">
+        <button class="btn btn-primary" id="phase1NextBtn" disabled>다음 단계로</button>
+    </div>
+</div>
+
+<!-- 4. 면접 - 질문 선택 -->
+<div id="phase2aScreen" class="screen">
+    <div class="phase-bar"><div class="phase-dot done"></div><div class="phase-dot current"></div><div class="phase-dot"></div></div>
+    <div class="phase-header">
+        <div class="phase-title">면접</div>
+        <div class="phase-desc">후보들에게 물어볼 질문을 하나 선택하세요</div>
+    </div>
+    <div id="questionList" class="question-list"></div>
+    <div style="text-align:center; margin-top:12px;">
+        <button class="btn btn-primary" id="phase2aNextBtn" disabled>질문하기</button>
+    </div>
+</div>
+
+<!-- 5. 면접 - 답변 보고 4명 선택 -->
+<div id="phase2bScreen" class="screen">
+    <div class="phase-bar"><div class="phase-dot done"></div><div class="phase-dot current"></div><div class="phase-dot"></div></div>
+    <div class="phase-header">
+        <div class="phase-title">면접 답변</div>
+        <div class="phase-desc">답변을 읽고 최종 4명을 선발하세요</div>
+    </div>
+    <div id="selectedQuestion" style="background:var(--mars-dim);padding:12px 16px;border-radius:10px;font-size:13px;color:var(--mars);font-weight:600;margin-bottom:12px;text-align:center;"></div>
+    <div id="answerList" class="answer-list"></div>
+    <div class="select-counter">
+        <span class="counter-text">선발한 팀원</span>
+        <span class="counter-num"><span id="phase2Count">0</span> / 4</span>
+    </div>
+    <div style="text-align:center; margin-top:12px;">
+        <button class="btn btn-primary" id="phase2bNextBtn" disabled>선발 확정</button>
+    </div>
+</div>
+
+<!-- 6. 시나리오 -->
+<div id="scenarioScreen" class="screen">
+    <div class="phase-bar"><div class="phase-dot done"></div><div class="phase-dot done"></div><div class="phase-dot current"></div></div>
+    <div class="scenario-progress" id="scenarioProgress">시나리오 1 / 5</div>
+    <div id="scenarioBox" class="scenario-box"></div>
+    <div class="phase-desc" style="text-align:center;margin-bottom:12px;">팀원의 의견 중 하나를 선택하세요</div>
+    <div id="opinionList" class="opinion-list"></div>
+</div>
+
+<!-- 7. 결과 화면 -->
+<div id="resultScreen" class="screen">
+    <div class="result-tabs">
+        <button class="result-tab active" data-tab="myResult" id="myResultTab">나의 결과</button>
+        <button class="result-tab" data-tab="groupStats" id="groupStatsTab">우리 반 통계</button>
+        <button class="result-tab" data-tab="globalStats" id="globalStatsTab">전체 통계</button>
+    </div>
+
+    <div class="result-content active" id="myResult">
+        <div id="myResultContent"></div>
+    </div>
+
+    <div class="result-content" id="groupStats">
+        <div id="groupStatsContent"><div class="empty-state">통계를 불러오는 중...</div></div>
+        <button class="refresh-btn" id="refreshGroupBtn" onclick="loadGroupStats()">새로고침</button>
+    </div>
+
+    <div class="result-content" id="globalStats">
+        <div id="globalStatsContent"><div class="empty-state">통계를 불러오는 중...</div></div>
+        <button class="refresh-btn" id="refreshGlobalBtn" onclick="loadGlobalStats()">새로고침</button>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-secondary" onclick="location.reload()">다시 하기</button>
+        <button class="btn btn-secondary" onclick="goHome()">처음으로</button>
+    </div>
+</div>
+
+<script src="/d_contents/01/common/common-entry.js"></script>
+<script>
+/* ============================================================
+   드림팀 마스 — 화성 정착 선발대를 꾸려라!
+   활동 ID: dream_team_mars
+   성취기준: [9진로01-03]
+   ============================================================ */
+
+// ==================== 1. 데이터 ====================
+
+// 5개 특성
+var TRAITS = {
+    cooperation:   { key:'cooperation',   name:'협업',      icon:'🤝', color:'#3b82f6' },
+    reliability:   { key:'reliability',   name:'신뢰성',    icon:'🛡️', color:'#10b981' },
+    creativity:    { key:'creativity',    name:'창의성',    icon:'💡', color:'#a855f7' },
+    challenge:     { key:'challenge',     name:'도전 정신', icon:'🔥', color:'#ef4444' },
+    communication: { key:'communication', name:'의사소통',  icon:'💬', color:'#f59e0b' }
+};
+
+// 20명 후보 프로필 (5주특성 × 4부특성)
+var CANDIDATES = [
+    // 주특성: 협업
+    { id:1,  name:'한하늘', primary:'cooperation', secondary:'reliability',   emoji:'👩‍🚀', intro:'혼자서는 절대 못 해요. 우리가 함께라면 반드시 해낼 수 있습니다.' },
+    { id:2,  name:'오세진', primary:'cooperation', secondary:'creativity',    emoji:'👨‍🔬', intro:'서로 다른 아이디어를 모으면 혼자서는 생각 못 할 답이 나와요.' },
+    { id:3,  name:'최다온', primary:'cooperation', secondary:'challenge',     emoji:'👩‍💻', intro:'같이 도전하면 무섭지 않아요. 팀이니까요.' },
+    { id:4,  name:'강예준', primary:'cooperation', secondary:'communication', emoji:'👨‍🏫', intro:'모두의 이야기를 들어야 진짜 좋은 답이 나와요.' },
+    // 주특성: 신뢰성
+    { id:5,  name:'박서연', primary:'reliability', secondary:'cooperation',   emoji:'👩‍🔧', intro:'제가 맡은 건 끝까지 해냅니다. 약속은 반드시 지켜요.' },
+    { id:6,  name:'김도현', primary:'reliability', secondary:'creativity',    emoji:'👨‍⚕️', intro:'데이터를 꼼꼼히 보면 남들이 놓친 해답이 보여요.' },
+    { id:7,  name:'이수아', primary:'reliability', secondary:'challenge',     emoji:'👩‍🍳', intro:'위험한 상황일수록 침착하게 절차를 따라야 해요.' },
+    { id:8,  name:'정우진', primary:'reliability', secondary:'communication', emoji:'👨‍🎨', intro:'상황을 정확하게 기록하고 공유하는 게 가장 중요해요.' },
+    // 주특성: 창의성
+    { id:9,  name:'윤나래', primary:'creativity',  secondary:'cooperation',   emoji:'👩‍🎤', intro:'엉뚱한 상상이 세상을 바꿔요. 같이 상상해 봐요!' },
+    { id:10, name:'송민재', primary:'creativity',  secondary:'reliability',   emoji:'👨‍🚒', intro:'새로운 방법을 찾되, 검증은 철저하게 해요.' },
+    { id:11, name:'배지유', primary:'creativity',  secondary:'challenge',     emoji:'👩‍⚖️', intro:'안 되는 건 없어요. 방법을 아직 못 찾은 것뿐이에요.' },
+    { id:12, name:'류태양', primary:'creativity',  secondary:'communication', emoji:'👨‍🔬', intro:'제 아이디어를 설명하면 다들 눈이 반짝여요.' },
+    // 주특성: 도전 정신
+    { id:13, name:'임하진', primary:'challenge',   secondary:'cooperation',   emoji:'🧑‍🚀', intro:'두려워도 먼저 나서요. 누군가는 해야 하니까요.' },
+    { id:14, name:'조현우', primary:'challenge',   secondary:'reliability',   emoji:'👨‍✈️', intro:'과감하게 결정하되, 준비는 완벽하게 해요.' },
+    { id:15, name:'신예은', primary:'challenge',   secondary:'creativity',    emoji:'👩‍🔬', intro:'실패해도 괜찮아요. 거기서 새로운 길이 보이거든요.' },
+    { id:16, name:'홍찬솔', primary:'challenge',   secondary:'communication', emoji:'👨‍🎓', intro:'위기 상황에서도 팀에게 용기를 줄 수 있어요.' },
+    // 주특성: 의사소통
+    { id:17, name:'문소율', primary:'communication',secondary:'cooperation',  emoji:'👩‍💼', intro:'대화가 통하면 못 풀 문제가 없어요.' },
+    { id:18, name:'장서준', primary:'communication',secondary:'reliability',  emoji:'👨‍🏭', intro:'정확한 정보를 제때 전달하는 게 생존의 핵심이에요.' },
+    { id:19, name:'안지민', primary:'communication',secondary:'creativity',   emoji:'👩‍🎓', intro:'서로 다른 생각을 연결하면 놀라운 일이 생겨요.' },
+    { id:20, name:'서윤호', primary:'communication',secondary:'challenge',    emoji:'👨‍💻', intro:'솔직하게 말해야 해요. 위기일수록 더요.' }
+];
+
+// 면접 질문 3개
+var QUESTIONS = [
+    { id:1, text:'화성에서 예상치 못한 위기가 발생하면 어떻게 대처하시겠습니까?' },
+    { id:2, text:'팀원과 의견이 충돌할 때 어떻게 해결하시겠습니까?' },
+    { id:3, text:'화성 정착지에서 가장 먼저 해야 할 일은 무엇이라고 생각합니까?' }
+];
+
+// 면접 답변: ANSWERS[questionId][candidateId]
+var ANSWERS = {
+    1: { // 위기 대처
+        1:  '팀원들에게 각자 역할을 나누고, 서로 진행 상황을 계속 확인하면서 체계적으로 대응합시다.',
+        2:  '다 같이 모여서 아이디어를 쏟아낸 뒤, 가장 참신한 해결책을 팀워크로 실행해 봅시다.',
+        3:  '위기일수록 뭉쳐야 해요. 두려워도 함께 정면 돌파합시다!',
+        4:  '먼저 모두 모여서 각자 상황 파악한 걸 공유하고, 같이 최선의 방법을 정합시다.',
+        5:  '매뉴얼을 꺼내서 정해진 위기 대응 절차부터 확인하겠습니다. 약속한 대로 움직여야 해요.',
+        6:  '센서 데이터를 분석해서 위기의 정확한 원인을 찾겠습니다. 원인을 알면 새로운 해결법이 보여요.',
+        7:  '침착하게 안전 점검부터 하고, 위험을 감수하더라도 절차에 따라 움직입시다.',
+        8:  '지구 본부에 상황 보고를 정확하게 작성하고, 팀에게도 현재 상태를 빠짐없이 공유합시다.',
+        9:  '틀에 박힌 매뉴얼 말고, 다 같이 머리를 모아 전혀 새로운 방법을 찾아봐요!',
+        10: '새로운 아이디어가 있긴 한데, 먼저 데이터로 안전성을 검증한 뒤에 시도합시다.',
+        11: '아무도 시도 안 한 방법이 있어요. 실패할 수도 있지만, 해볼 가치가 있습니다!',
+        12: '제가 떠올린 해결 방안을 팀원들에게 알기 쉽게 설명할게요. 이해해야 실행할 수 있으니까요.',
+        13: '제가 먼저 나서서 확인하겠습니다. 팀원들은 안전한 곳에서 지원해 주세요.',
+        14: '즉시 행동해야 합니다. 다만, 출발 전 안전 장비 점검은 빠짐없이 합시다.',
+        15: '실패해도 괜찮아요. 지금 시도하지 않으면 답을 영영 못 찾을 수도 있습니다.',
+        16: '제가 앞장서겠습니다. 그리고 팀원들에게 각자 할 일을 명확하게 전달할게요.',
+        17: '먼저 팀원들의 의견을 들어봅시다. 다양한 관점이 모이면 더 좋은 대응이 나와요.',
+        18: '위기 상황을 정확한 수치와 사실로 팀에게 전달하고, 차분히 판단합시다.',
+        19: '각자 떠올린 아이디어를 연결해 보면 예상 못 한 돌파구가 생길 수 있어요.',
+        20: '지금 솔직하게 상황을 직면합시다. 거짓 희망보다 현실을 아는 게 먼저예요.'
+    },
+    2: { // 의견 충돌
+        1:  '서로의 입장을 충분히 듣고, 공통점을 찾아서 함께 나아갈 방향을 정합시다.',
+        2:  '두 의견을 합치면 더 좋은 세 번째 답이 나올 수 있어요. 같이 만들어 봐요.',
+        3:  '의견이 다르더라도 팀의 목표는 같잖아요. 함께 도전할 수 있는 길을 찾읍시다.',
+        4:  '양쪽 모두 충분히 이야기하고, 서로 이해한 다음에 결정합시다.',
+        5:  '객관적인 데이터로 비교해 봅시다. 근거가 확실한 쪽이 맞을 가능성이 높아요.',
+        6:  '두 안 모두 검증해 볼 시간이 있다면 작은 테스트로 확인하는 게 가장 정확해요.',
+        7:  '의견이 갈리면, 안전을 기준으로 판단합시다. 위험한 쪽은 일단 보류해요.',
+        8:  '각자 근거를 문서로 정리해서 비교하면 감정 없이 결정할 수 있어요.',
+        9:  '충돌이 꼭 나쁜 건 아니에요. 서로 다른 생각이 부딪혀야 혁신이 나옵니다.',
+        10: '새로운 시각도 좋지만, 기존에 검증된 방법과 비교해서 더 나은 쪽을 선택합시다.',
+        11: '기존 방식에 묶이지 말고, 충돌 자체를 기회로 삼아 완전히 새 길을 찾아봐요.',
+        12: '제 아이디어를 한번 들어보세요. 설명하면 왜 이 방법이 좋은지 이해하실 거예요.',
+        13: '결정이 어려우면 제가 책임지고 한쪽을 밀고 나가겠습니다.',
+        14: '빠른 결정이 필요합니다. 위험도를 따져서 더 안전한 도전을 선택합시다.',
+        15: '둘 다 해보면 되죠! 작게 시도해 보고 결과를 보면 답이 나옵니다.',
+        16: '갈등이 있어도 팀의 사기가 떨어지면 안 돼요. 제가 중재하면서 용기를 북돋을게요.',
+        17: '대화로 풀 수 있어요. 서로 진짜 원하는 게 뭔지 차분히 나눠봅시다.',
+        18: '감정을 빼고 사실만 놓고 이야기합시다. 정확한 정보가 판단의 기준이에요.',
+        19: '두 의견을 이어 붙이면 전혀 예상 못 한 좋은 아이디어가 나올 수 있어요.',
+        20: '불편하더라도 솔직하게 말하는 게 낫습니다. 숨기면 나중에 더 크게 터져요.'
+    },
+    3: { // 먼저 할 일
+        1:  '모두 모여서 각자 할 일을 정하는 겁니다. 역할이 명확해야 효율적으로 움직여요.',
+        2:  '팀원들과 브레인스토밍을 먼저 해요. 다양한 시각으로 우선순위를 같이 정합시다.',
+        3:  '일단 밖으로 나가서 주변 환경을 직접 탐색해 봅시다. 같이 가면 더 안전하고 넓게 볼 수 있어요.',
+        4:  '각자의 전문 분야와 역할을 공유하는 시간이 먼저예요. 서로를 알아야 함께 일할 수 있어요.',
+        5:  '생명 유지 장치부터 점검합시다. 산소, 수온, 전력 — 기본이 안전해야 다음 단계가 가능해요.',
+        6:  '환경 데이터를 수집하고 분석해서, 어떤 자원이 있고 어떤 위험이 있는지 파악합시다.',
+        7:  '비상 탈출 경로와 안전 시스템을 먼저 확인합시다. 만약을 대비해야 해요.',
+        8:  '지구 본부에 도착 보고를 보내고, 현재 상태를 정확하게 기록합시다.',
+        9:  '정착지의 가능성을 찾아봐요! 기존 계획에 없던 자원이나 지형이 있을 수 있어요.',
+        10: '새로운 환경이니 기존 매뉴얼을 재점검합시다. 화성에 안 맞는 건 수정해야 해요.',
+        11: '고정관념을 버리고 화성 환경에 맞는 완전히 새로운 건축 방식을 시도해 봅시다!',
+        12: '제가 정착지 설계 아이디어를 팀원들에게 발표할게요. 같이 논의하면서 다듬어 봐요.',
+        13: '주변 탐사를 먼저 나가 봅시다. 위험도 있지만, 직접 봐야 판단할 수 있어요.',
+        14: '과감하게 기지 건설부터 시작합시다. 단, 안전 기준은 절대 타협하지 않습니다.',
+        15: '일단 뭐든 시도해 봅시다! 화성의 흙으로 벽돌을 만들 수 있는지 실험부터요.',
+        16: '팀원들에게 "걱정 마세요, 해낼 수 있습니다"라고 먼저 말하고 싶어요. 사기가 중요합니다.',
+        17: '다 같이 둘러앉아 서로의 기대와 걱정을 이야기합시다. 마음이 통해야 시작할 수 있어요.',
+        18: '통신 장비를 세팅하고, 지구와 안정적인 연락 체계를 먼저 만듭시다.',
+        19: '각자 전공이 다른 만큼, 서로의 지식을 공유하면 예상 못 한 해결법이 나올 거예요.',
+        20: '솔직히 현재 상황이 어떤지 점검부터 합시다. 희망적인 말보다 정확한 현실 파악이 먼저예요.'
+    }
+};
+
+// 시나리오 5개
+var SCENARIOS = [
+    { id:1, icon:'🌪️', title:'모래폭풍 경보', situation:'화성 궤도 위성이 36시간 뒤 대형 모래폭풍 접근을 예고했습니다. 정착지 외벽은 아직 70%만 완성된 상태입니다.' },
+    { id:2, icon:'💧', title:'식수 위기', situation:'정수 장치에 균열이 발견되어 식수 생산량이 40%로 떨어졌습니다. 수리 부품은 없고, 남은 식수는 5일치입니다.' },
+    { id:3, icon:'📡', title:'통신 두절', situation:'지구와의 통신이 갑자기 끊겼습니다. 원인을 알 수 없고, 다음 보급선 도착까지 45일 남았습니다.' },
+    { id:4, icon:'🌱', title:'식량 생산 실패', situation:'온실 작물의 절반이 원인 불명의 질병으로 시들기 시작했습니다. 남은 작물까지 전염될 수 있습니다.' },
+    { id:5, icon:'🚀', title:'탈출인가 잔류인가', situation:'화성 지각 활동이 감지되었습니다. 비상 귀환선은 2명만 태울 수 있고, 잔류하면 위험하지만 정착지를 지킬 수 있습니다.' }
+];
+
+// 시나리오 의견: OPINIONS[scenarioId][candidateId]
+var OPINIONS = {
+    1: { // 모래폭풍
+        1:  '역할을 나눠서 외벽 보강팀과 내부 대비팀으로 나누고, 진행 상황을 매 시간 공유합시다.',
+        2:  '다 같이 머리를 모아서, 외벽 대신 모래를 활용한 임시 방벽을 쌓는 건 어떨까요?',
+        3:  '팀원 모두 힘을 합쳐 폭풍이 오기 전에 외벽 완성에 도전합시다!',
+        4:  '각자 상황을 파악한 걸 공유하고, 함께 우선순위를 정합시다.',
+        5:  '기존 폭풍 대비 매뉴얼대로 움직입시다. 검증된 절차가 가장 안전해요.',
+        6:  '풍속과 도착 시간을 정밀 분석해서, 보강이 필요한 구간을 정확히 찾아내요.',
+        7:  '외벽 보강도 중요하지만, 먼저 비상 대피 구역 안전을 확인합시다.',
+        8:  '폭풍까지 남은 시간, 외벽 상태, 필요 자재를 정리해서 팀에게 브리핑합시다.',
+        9:  '외벽을 완성하는 대신, 지하 공간을 활용한 임시 대피소를 만들어 봐요!',
+        10: '새로운 방법도 생각해 봤는데, 안전 시뮬레이션을 먼저 돌려보고 결정합시다.',
+        11: '기존 방법으론 시간이 부족해요. 화성의 모래를 접착제로 쓰는 실험을 해봅시다!',
+        12: '제 아이디어를 그림으로 설명할게요. 모래 자체를 외벽 재료로 쓸 수 있어요.',
+        13: '폭풍 경로를 직접 확인하러 나가 봅시다. 실제로 봐야 대비할 수 있어요.',
+        14: '즉시 외벽 보강 작전을 시작합시다. 단, 안전 장비를 완벽히 갖추고요.',
+        15: '폭풍을 피하는 대신, 폭풍 에너지를 활용하는 방법은 없을까요?',
+        16: '겁먹지 맙시다! 제가 팀을 이끌고 36시간 안에 해낼 수 있다고 확신해요.',
+        17: '먼저 팀원들의 걱정을 들어보고, 각자 할 수 있는 일을 함께 정합시다.',
+        18: '위성 데이터를 정확히 전달하고, 시간 단위로 상황 업데이트를 공유합시다.',
+        19: '팀원들의 다양한 전문 지식을 연결하면 예상 못 한 대응법이 나올 거예요.',
+        20: '솔직히 말하면 36시간은 빠듯합니다. 최악의 경우를 대비한 계획도 세웁시다.'
+    },
+    2: { // 식수 위기
+        1:  '물 배분과 절약을 함께 관리합시다. 팀원마다 역할을 나눠서 체계적으로 대응해요.',
+        2:  '다 같이 아이디어를 모으면 수리 부품 없이도 해결책을 찾을 수 있을 거예요.',
+        3:  '화성 지표면에서 얼음을 찾는 탐사에 팀 전체가 함께 나섭시다!',
+        4:  '물 사용량을 공개적으로 공유하고, 함께 절약 방법을 논의합시다.',
+        5:  '남은 식수를 정확히 계량하고, 하루 배분량을 지킬 수 있도록 관리합시다.',
+        6:  '균열 부위를 정밀 분석하면, 현재 자재로 임시 수리할 방법이 보일 거예요.',
+        7:  '비상용 식수 비축분을 확인하고, 최악의 경우까지 대비한 절수 계획을 세웁시다.',
+        8:  '남은 식수량, 소비 추이, 예상 고갈 날짜를 정리해서 팀에게 보고합시다.',
+        9:  '화성 토양에서 수분을 추출하는 실험을 해봐요! 아무도 안 해본 방법이에요.',
+        10: '새로운 정수 방법을 찾되, 기존 장치의 데이터를 분석해서 안전한 방법을 선택합시다.',
+        11: '정수 장치를 수리하는 대신, 아예 새로운 방식의 물 생산 시스템을 만들어 봅시다!',
+        12: '응급 수리 방법을 도면으로 그려서 팀원들에게 설명할게요.',
+        13: '직접 정수 장치를 분해해서 수리에 도전합시다. 가만히 기다릴 수는 없어요.',
+        14: '지하 얼음을 찾으러 탐사에 나갑시다. 위험하지만 준비를 철저히 하면 됩니다.',
+        15: '실패해도 괜찮으니, 화성 대기에서 수분을 모으는 장치를 즉석에서 만들어 봅시다.',
+        16: '5일이면 충분합니다. 포기하지 말고 탐사와 수리를 동시에 진행합시다!',
+        17: '팀원들이 불안해할 테니, 먼저 상황을 솔직하게 공유하고 같이 대책을 논의합시다.',
+        18: '식수 현황을 수치로 정리해서 전달하고, 매일 사용량을 기록합시다.',
+        19: '각자 아는 과학 지식을 공유하면, 예상 못 한 수분 확보 방법이 나올 거예요.',
+        20: '현실을 직시합시다. 5일이에요. 감상에 빠질 시간 없이 즉시 행동해야 합니다.'
+    },
+    3: { // 통신 두절
+        1:  '팀원들과 역할을 나눠서, 수리팀과 자립 준비팀을 동시에 운영합시다.',
+        2:  '다 같이 통신 장비를 살펴보면, 누군가는 원인을 찾을 거예요.',
+        3:  '두려워도 함께라면 할 수 있어요. 지구 없이도 팀워크로 버팁시다!',
+        4:  '먼저 팀원들의 걱정을 들어보고, 서로 안심시키면서 계획을 세웁시다.',
+        5:  '비상 통신 프로토콜을 확인합시다. 예비 채널이 있을 수 있어요.',
+        6:  '통신 장비의 로그 데이터를 분석해서 두절 원인을 정확히 파악합시다.',
+        7:  '통신 복구에 매달리기보다, 45일 동안 자급자족할 계획을 먼저 세웁시다.',
+        8:  '통신 두절 시점, 장비 상태, 시도한 조치를 꼼꼼히 기록합시다.',
+        9:  '통신 장비 대신, 화성 위성을 활용한 대안 통신 방법을 고안해 봐요!',
+        10: '원인을 모르니, 여러 가설을 세우고 하나씩 검증해 봅시다.',
+        11: '기존 통신 방식에 집착하지 말고, 완전히 새로운 신호 체계를 만들어 봐요!',
+        12: '제 가설을 팀에게 설명할게요. 태양 활동이 원인일 수 있는데, 대응법이 있어요.',
+        13: '안테나를 직접 점검하러 나갑시다. 외부 원인일 수도 있어요.',
+        14: '즉시 비상 모드로 전환합시다. 대담하지만 체계적으로 대비해요.',
+        15: '이건 오히려 기회예요. 지구에 의존하지 않는 독립적 정착지를 시험해 봅시다!',
+        16: '두려워하지 맙시다! 45일이면 충분해요. 팀의 힘을 믿어 봅시다.',
+        17: '팀원들의 불안을 먼저 달래고, 각자 할 일을 명확히 공유합시다.',
+        18: '통신 기록을 정밀 분석해서, 정확한 두절 원인과 복구 가능성을 팀에게 보고합시다.',
+        19: '기술자와 과학자의 시각을 합치면, 기존에 생각 못 한 복구 방법이 나올 수 있어요.',
+        20: '솔직히 45일은 길어요. 최악을 가정하고 냉정하게 자급 계획을 세웁시다.'
+    },
+    4: { // 식량 생산 실패
+        1:  '건강한 작물과 감염된 작물을 나눠 관리할 팀을 구성합시다.',
+        2:  '다 같이 원인을 조사하면서, 동시에 새로운 재배 방법을 실험해 봅시다.',
+        3:  '힘들지만 함께 24시간 교대로 온실을 지킵시다. 팀이면 가능해요!',
+        4:  '팀원 각자가 관찰한 증상을 공유하면, 원인을 더 빨리 찾을 수 있어요.',
+        5:  '감염 작물을 즉시 격리하고, 남은 작물의 상태를 매일 기록합시다.',
+        6:  '작물 샘플을 채취해서 정밀 분석합시다. 데이터가 있어야 정확한 진단이 가능해요.',
+        7:  '전염 차단이 최우선입니다. 감염 구역을 완전히 밀봉하고 관찰합시다.',
+        8:  '작물 상태 변화를 시간별로 기록하고, 지구 데이터베이스에서 유사 사례를 찾아봅시다.',
+        9:  '화성 토양의 미생물을 활용한 새로운 비료를 만들어 봐요! 기존 방법이 안 되면 새 길을 찾아야 해요.',
+        10: '새 재배법을 시도하되, 남은 건강한 작물은 기존 방식으로 안전하게 유지합시다.',
+        11: '온실 환경 자체를 바꿔봅시다. 빛, 온도, 토양을 완전히 다르게 실험해요!',
+        12: '제가 화성 환경에 맞는 대체 재배 시스템을 설계해서 설명할게요.',
+        13: '감염 위험을 감수하고 직접 온실에 들어가 조사합시다. 빨리 행동해야 해요.',
+        14: '대담하게 감염 구역의 작물을 모두 제거하고, 새로 시작합시다. 단, 씨앗 재고를 먼저 확인해요.',
+        15: '실패한 작물에서 배울 게 있어요. 원인을 역추적해서 새 재배 조건을 실험합시다.',
+        16: '식량이 없으면 사기가 떨어져요. 대안을 찾으면서 팀에게 희망을 줍시다.',
+        17: '팀원들이 불안해하니, 먼저 모여서 각자 아이디어를 나누는 시간을 가집시다.',
+        18: '온실 환경 데이터를 수집해서, 질병 발생 전후 변화를 정확히 비교합시다.',
+        19: '생물학자, 화학자, 엔지니어의 시각을 합치면 뜻밖의 치료법이 나올 수 있어요.',
+        20: '남은 식량이 얼마인지 솔직하게 공유합시다. 현실을 알아야 올바른 결정을 할 수 있어요.'
+    },
+    5: { // 탈출 vs 잔류
+        1:  '4명이 함께 논의해서 결정합시다. 이건 혼자 정할 문제가 아니에요.',
+        2:  '잔류하면서 새로운 내진 기술을 개발해 봅시다. 함께 도전하면 길이 보여요.',
+        3:  '팀 전체가 같이 남읍시다. 우리가 여기까지 함께 온 이유가 있잖아요!',
+        4:  '귀환할 사람, 남을 사람 모두의 의견을 충분히 듣고 합의로 결정합시다.',
+        5:  '지각 데이터를 분석해서 실제 위험도를 확인합시다. 근거 없이 결정하면 안 돼요.',
+        6:  '진동 패턴을 분석하면 위험 수준을 정확히 예측할 수 있어요. 데이터로 판단합시다.',
+        7:  '가장 위험한 인원 2명을 먼저 귀환시키고, 남은 인원은 안전 구역에서 대기합시다.',
+        8:  '귀환 판단 기준을 문서화하고, 지구에도 상황을 정확히 전달합시다.',
+        9:  '지각 활동을 오히려 에너지원으로 활용할 수 있을지 연구해 봅시다!',
+        10: '잔류해서 기지를 지키되, 내진 보강을 데이터 기반으로 철저히 합시다.',
+        11: '위기가 곧 기회! 지각 활동이 있는 곳에 광물 자원이 있을 수 있어요.',
+        12: '왜 잔류가 가치 있는지 팀에게 설명할게요. 정착지는 인류 전체의 희망이에요.',
+        13: '전원 잔류합시다. 여기서 물러나면 화성 정착의 꿈은 끝이에요.',
+        14: '남겠습니다. 다만, 귀환선은 최악의 비상용으로 남겨두고 내진 대비를 합시다.',
+        15: '지진이 무서워서 도망가면, 화성의 진짜 가능성을 영영 못 찾아요.',
+        16: '두려움에 지면 안 됩니다. 팀을 믿고 함께 남아서 정착지를 지킵시다!',
+        17: '4명 모두 솔직한 마음을 나누고, 서로의 선택을 존중하면서 결정합시다.',
+        18: '각자의 귀환/잔류 사유를 기록하고, 객관적 기준으로 판단합시다.',
+        19: '귀환과 잔류, 양쪽의 장단점을 정리해서 팀에게 공유하면 더 나은 결정이 나와요.',
+        20: '현실적으로 봅시다. 2명만 탈 수 있으면, 남는 2명의 안전부터 확보해야 합니다.'
+    }
+};
+
+// 결과 피드백 메시지
+var FEEDBACKS = {
+    cooperation:   '당신은 팀워크를 중시하는 리더입니다. 어려운 상황에서도 함께 힘을 모으는 것을 가장 먼저 생각하는 당신은, 주변 사람들에게 든든한 동료가 될 거예요. 혼자 빛나는 것보다 함께 빛나는 팀을 만드는 사람이에요.',
+    reliability:   '당신은 믿음직한 전문가 스타일입니다. 정확하게 상황을 파악하고 체계적으로 대처하는 당신이 있으면 팀원들이 안심할 수 있어요. 꼼꼼함과 책임감이 당신의 가장 큰 무기예요.',
+    creativity:    '당신은 혁신적인 문제 해결사입니다. 남들이 생각 못 한 방법을 떠올리는 당신 덕분에 위기가 기회로 바뀔 수 있어요. 틀에 얽매이지 않는 자유로운 사고가 당신의 강점이에요.',
+    challenge:     '당신은 용감한 개척자입니다. 두려움 앞에서도 한 발 먼저 나서는 당신이 있기에 팀이 앞으로 나아갈 수 있어요. 도전을 즐기는 당신의 에너지가 주변 사람들에게도 용기를 줘요.',
+    communication: '당신은 소통의 달인입니다. 팀원들의 생각을 연결하고 갈등을 풀어내는 당신이 있으면 어떤 팀이든 하나가 될 수 있어요. 경청과 공감이 당신의 특별한 능력이에요.'
+};
+
+
+// ==================== 2. 상태 ====================
+var phase1Selected = [];   // 서류심사 통과 8명 ID
+var selectedQuestion = 0;  // 면접 질문 (1,2,3)
+var phase2Selected = [];   // 최종 4명 ID
+var scenarioResults = [];  // [{scenario,chosen_candidate,chosen_trait}]
+var traitScores = { cooperation:0, reliability:0, creativity:0, challenge:0, communication:0 };
+var currentScenario = 0;
+var currentBubbleId = null;
+
+
+// ==================== 3. 초기화 ====================
+EoEntry.init({
+    activityId: 'dream_team_mars',
+    title: '🚀 드림팀 마스',
+    subtitle: '화성 정착 선발대를 꾸려라!',
+    onStart: function() {
+        showScreen('intro');
+        startIntroAnimation();
+    }
+});
+
+function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    var el = document.getElementById(name + 'Screen');
+    if (el) { el.classList.add('active'); }
+    window.scrollTo(0, 0);
+}
+
+function startIntroAnimation() {
+    var lines = ['line1','line2','line3','line4'];
+    lines.forEach(function(id, i) {
+        setTimeout(function() {
+            document.getElementById(id).classList.add('visible');
+        }, 800 + i * 1200);
+    });
+    setTimeout(function() {
+        document.getElementById('introStartBtn').classList.add('visible');
+    }, 800 + lines.length * 1200 + 600);
+}
+
+document.getElementById('introStartBtn').addEventListener('click', function() {
+    showScreen('phase1');
+    buildPhase1();
+});
+
+
+// ==================== 4. 서류심사 (20→8) ====================
+function buildPhase1() {
+    var grid = document.getElementById('candidateGrid');
+    // 카드 순서 랜덤화
+    var shuffled = CANDIDATES.slice().sort(function() { return Math.random() - 0.5; });
+    grid.innerHTML = '';
+    shuffled.forEach(function(c) {
+        var div = document.createElement('div');
+        div.className = 'cand-card';
+        div.setAttribute('data-id', c.id);
+        div.innerHTML = '<span class="check">✓</span><span class="emoji">' + c.emoji + '</span><span class="name">' + c.name + '</span>';
+        div.addEventListener('click', function() { toggleCandidate(c.id, div); });
+        grid.appendChild(div);
+    });
+}
+
+function toggleCandidate(id, el) {
+    var idx = phase1Selected.indexOf(id);
+    if (idx >= 0) {
+        // 선택 해제
+        phase1Selected.splice(idx, 1);
+        el.classList.remove('selected');
+    } else {
+        if (phase1Selected.length >= 8) return; // 이미 8명
+        phase1Selected.push(id);
+        el.classList.add('selected');
+    }
+    // 말풍선 표시
+    showSpeechBubble(id);
+    // 카운터 업데이트
+    document.getElementById('phase1Count').textContent = phase1Selected.length;
+    document.getElementById('phase1NextBtn').disabled = phase1Selected.length < 8;
+}
+
+function showSpeechBubble(id) {
+    var c = CANDIDATES.find(function(x) { return x.id === id; });
+    if (!c) return;
+    var bubble = document.getElementById('speechBubble');
+    bubble.querySelector('.sb-emoji').textContent = c.emoji;
+    bubble.querySelector('.sb-name').textContent = c.name;
+    bubble.querySelector('.sb-text').textContent = '"' + c.intro + '"';
+    bubble.classList.add('show');
+    currentBubbleId = id;
+}
+
+document.getElementById('phase1NextBtn').addEventListener('click', function() {
+    showScreen('phase2a');
+    buildQuestionSelection();
+});
+
+
+// ==================== 5. 면접 - 질문 선택 ====================
+function buildQuestionSelection() {
+    var list = document.getElementById('questionList');
+    list.innerHTML = '';
+    QUESTIONS.forEach(function(q) {
+        var div = document.createElement('div');
+        div.className = 'q-card';
+        div.setAttribute('data-qid', q.id);
+        div.innerHTML = '<div class="q-num">질문 ' + q.id + '</div><div>' + q.text + '</div>';
+        div.addEventListener('click', function() {
+            document.querySelectorAll('.q-card').forEach(function(c) { c.classList.remove('selected'); });
+            div.classList.add('selected');
+            selectedQuestion = q.id;
+            document.getElementById('phase2aNextBtn').disabled = false;
+        });
+        list.appendChild(div);
+    });
+}
+
+document.getElementById('phase2aNextBtn').addEventListener('click', function() {
+    showScreen('phase2b');
+    buildInterviewAnswers();
+});
+
+
+// ==================== 6. 면접 - 답변 읽고 4명 선택 ====================
+function buildInterviewAnswers() {
+    var qText = QUESTIONS.find(function(q) { return q.id === selectedQuestion; }).text;
+    document.getElementById('selectedQuestion').textContent = '💬 "' + qText + '"';
+
+    var list = document.getElementById('answerList');
+    list.innerHTML = '';
+    phase2Selected = [];
+
+    // 서류심사 통과한 8명의 답변 표시
+    phase1Selected.forEach(function(cid) {
+        var c = CANDIDATES.find(function(x) { return x.id === cid; });
+        var answer = ANSWERS[selectedQuestion][cid];
+        var div = document.createElement('div');
+        div.className = 'ans-card';
+        div.setAttribute('data-id', cid);
+        div.innerHTML =
+            '<div class="ans-left"><span class="emoji">' + c.emoji + '</span><span class="name">' + c.name + '</span></div>' +
+            '<div class="ans-text">"' + answer + '"</div>';
+        div.addEventListener('click', function() { togglePhase2(cid, div); });
+        list.appendChild(div);
+    });
+
+    document.getElementById('phase2Count').textContent = '0';
+    document.getElementById('phase2bNextBtn').disabled = true;
+}
+
+function togglePhase2(id, el) {
+    var idx = phase2Selected.indexOf(id);
+    if (idx >= 0) {
+        phase2Selected.splice(idx, 1);
+        el.classList.remove('selected');
+    } else {
+        if (phase2Selected.length >= 4) return;
+        phase2Selected.push(id);
+        el.classList.add('selected');
+    }
+    document.getElementById('phase2Count').textContent = phase2Selected.length;
+    document.getElementById('phase2bNextBtn').disabled = phase2Selected.length < 4;
+}
+
+document.getElementById('phase2bNextBtn').addEventListener('click', function() {
+    currentScenario = 0;
+    scenarioResults = [];
+    traitScores = { cooperation:0, reliability:0, creativity:0, challenge:0, communication:0 };
+    showScreen('scenario');
+    buildScenario();
+});
+
+
+// ==================== 7. 시나리오 (5개) ====================
+function buildScenario() {
+    var s = SCENARIOS[currentScenario];
+    document.getElementById('scenarioProgress').textContent = '시나리오 ' + (currentScenario + 1) + ' / 5';
+
+    var box = document.getElementById('scenarioBox');
+    box.innerHTML =
+        '<div class="scenario-icon">' + s.icon + '</div>' +
+        '<div class="scenario-title">' + s.title + '</div>' +
+        '<div class="scenario-situation">' + s.situation + '</div>';
+
+    var list = document.getElementById('opinionList');
+    list.innerHTML = '';
+
+    // 선발된 4명의 의견 표시
+    phase2Selected.forEach(function(cid) {
+        var c = CANDIDATES.find(function(x) { return x.id === cid; });
+        var opinion = OPINIONS[s.id][cid];
+        var div = document.createElement('div');
+        div.className = 'op-card';
+        div.setAttribute('data-id', cid);
+        div.innerHTML =
+            '<div class="op-header"><span class="emoji">' + c.emoji + '</span><span class="name">' + c.name + '</span></div>' +
+            '<div class="op-text">"' + opinion + '"</div>';
+        div.addEventListener('click', function() { chooseOpinion(cid, div); });
+        list.appendChild(div);
+    });
+}
+
+function chooseOpinion(cid, el) {
+    // 중복 클릭 방지
+    if (el.classList.contains('chosen')) return;
+    document.querySelectorAll('.op-card').forEach(function(c) { c.style.pointerEvents = 'none'; });
+    el.classList.add('chosen');
+
+    var c = CANDIDATES.find(function(x) { return x.id === cid; });
+    traitScores[c.primary]++;
+    scenarioResults.push({
+        scenario: SCENARIOS[currentScenario].id,
+        chosen_candidate: cid,
+        chosen_trait: c.primary
+    });
+
+    // 다음 시나리오 또는 결과
+    setTimeout(function() {
+        currentScenario++;
+        if (currentScenario < 5) {
+            buildScenario();
+            window.scrollTo(0, 0);
+        } else {
+            showResults();
+        }
+    }, 800);
+}
+
+
+// ==================== 8. 결과 화면 ====================
+function showResults() {
+    showScreen('result');
+    EoEntry.setupResultTabs();
+    renderMyResult();
+    saveResult();
+    loadGroupStats();
+    loadGlobalStats();
+}
+
+function getTopTrait() {
+    var maxVal = 0;
+    var topKey = 'cooperation';
+    var keys = Object.keys(traitScores);
+    for (var i = 0; i < keys.length; i++) {
+        if (traitScores[keys[i]] > maxVal) {
+            maxVal = traitScores[keys[i]];
+            topKey = keys[i];
+        }
+    }
+    return topKey;
+}
+
+function renderMyResult() {
+    var topTrait = getTopTrait();
+    var t = TRAITS[topTrait];
+
+    // 팀 멤버 표시
+    var teamHtml = '<div class="team-display">';
+    phase2Selected.forEach(function(cid) {
+        var c = CANDIDATES.find(function(x) { return x.id === cid; });
+        var tr = TRAITS[c.primary];
+        var trSub = TRAITS[c.secondary];
+        teamHtml += '<div class="team-member">' +
+            '<div class="emoji">' + c.emoji + '</div>' +
+            '<div class="name">' + c.name + '</div>' +
+            '<span class="trait-tag trait-' + c.primary + '">' + tr.icon + ' ' + tr.name + '</span><br>' +
+            '<span class="trait-sub trait-' + c.secondary + '">' + trSub.icon + ' ' + trSub.name + '</span>' +
+            '</div>';
+    });
+    teamHtml += '</div>';
+
+    // 특성 바 차트
+    var barsHtml = '<div class="trait-bars">';
+    var traitKeys = ['cooperation','reliability','creativity','challenge','communication'];
+    var maxScore = Math.max.apply(null, traitKeys.map(function(k) { return traitScores[k]; }));
+    if (maxScore === 0) maxScore = 1;
+    traitKeys.forEach(function(k) {
+        var tr = TRAITS[k];
+        var pct = (traitScores[k] / 5 * 100);
+        barsHtml += '<div class="trait-bar-item">' +
+            '<span class="trait-bar-label">' + tr.icon + ' ' + tr.name + '</span>' +
+            '<div class="trait-bar-bg"><div class="trait-bar-fill" style="width:' + pct + '%;background:' + tr.color + '"></div></div>' +
+            '<span class="trait-bar-count">' + traitScores[k] + '</span>' +
+            '</div>';
+    });
+    barsHtml += '</div>';
+
+    document.getElementById('myResultContent').innerHTML =
+        '<div class="stat-card">' +
+            '<div class="stat-title">🚀 나의 화성 선발대</div>' +
+            teamHtml +
+        '</div>' +
+        '<div class="top-trait-box">' +
+            '<div class="top-trait-icon">' + t.icon + '</div>' +
+            '<div class="top-trait-name">' + t.name + '</div>' +
+            '<div class="top-trait-label">내가 가장 중시한 직업인의 특성</div>' +
+        '</div>' +
+        '<div class="stat-card">' +
+            '<div class="stat-title">📊 특성별 선택 횟수</div>' +
+            barsHtml +
+        '</div>' +
+        '<div class="feedback-box">' + FEEDBACKS[topTrait] + '</div>';
+}
+
+
+// ==================== 9. 결과 저장 (API) ====================
+function saveResult() {
+    var topTrait = getTopTrait();
+    var resultData = {
+        phase1_selected: phase1Selected,
+        interview_question: selectedQuestion,
+        phase2_selected: phase2Selected,
+        scenarios: scenarioResults,
+        trait_scores: traitScores,
+        top_trait: topTrait,
+        timestamp: new Date().toISOString()
+    };
+
+    fetch(EoEntry.API_BASE + '/result.php?action=submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            activity_id: 'dream_team_mars',
+            participant_id: EoEntry.state.participantId,
+            group_id: EoEntry.state.groupId,
+            result_data: resultData
+        })
+    }).catch(function(e) { console.error('Result save error:', e); });
+}
+
+
+// ==================== 10. 통계 ====================
+function loadGroupStats() {
+    if (EoEntry.state.mode !== 'group') return;
+    EoEntry.refreshCooldown('refreshGroupBtn');
+
+    fetch(EoEntry.API_BASE + '/result.php?action=group&activity_id=dream_team_mars&group_id=' + EoEntry.state.groupId)
+        .then(function(r) { return r.json(); })
+        .then(function(data) { renderGroupStats(data); })
+        .catch(function() {
+            document.getElementById('groupStatsContent').innerHTML = '<div class="empty-state">통계를 불러올 수 없습니다.</div>';
+        });
+}
+
+function loadGlobalStats() {
+    EoEntry.refreshCooldown('refreshGlobalBtn');
+
+    fetch(EoEntry.API_BASE + '/result.php?action=national&activity_id=dream_team_mars&participant_id=' + (EoEntry.state.participantId || 0))
+        .then(function(r) { return r.json(); })
+        .then(function(data) { renderGlobalStats(data); })
+        .catch(function() {
+            document.getElementById('globalStatsContent').innerHTML = '<div class="empty-state">통계를 불러올 수 없습니다.</div>';
+        });
+}
+
+function renderGroupStats(data) {
+    if (!data || !data.total) {
+        document.getElementById('groupStatsContent').innerHTML = '<div class="empty-state">아직 데이터가 없습니다.</div>';
+        return;
+    }
+    document.getElementById('groupStatsContent').innerHTML = buildStatsHtml(data, '우리 반');
+}
+
+function renderGlobalStats(data) {
+    if (!data || !data.total) {
+        document.getElementById('globalStatsContent').innerHTML = '<div class="empty-state">아직 데이터가 없습니다.</div>';
+        return;
+    }
+    document.getElementById('globalStatsContent').innerHTML = buildStatsHtml(data, '전체');
+}
+
+function buildStatsHtml(data, label) {
+    var medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+    var html = '<div class="stat-card"><div class="stat-title">👥 ' + label + ' 참여자: ' + data.total + '명</div></div>';
+
+    // 인기 후보 TOP5
+    if (data.popular_candidates && data.popular_candidates.length > 0) {
+        html += '<div class="stat-card"><div class="stat-title">🏆 인기 후보 TOP 5</div>';
+        data.popular_candidates.slice(0, 5).forEach(function(pc, i) {
+            var c = CANDIDATES.find(function(x) { return x.id === pc.candidate_id; });
+            if (!c) return;
+            html += '<div class="pop-candidate">' +
+                '<span class="pop-rank">' + medals[i] + '</span>' +
+                '<span class="emoji">' + c.emoji + '</span>' +
+                '<div class="pop-info"><div class="pop-name">' + c.name + '</div></div>' +
+                '<div class="pop-count">' + pc.count + '표</div>' +
+                '</div>';
+        });
+        html += '</div>';
+    }
+
+    // 특성 분포
+    if (data.trait_distribution) {
+        var total = 0;
+        var traitKeys = ['cooperation','reliability','creativity','challenge','communication'];
+        traitKeys.forEach(function(k) { total += (data.trait_distribution[k] || 0); });
+        if (total > 0) {
+            html += '<div class="stat-card"><div class="stat-title">📊 ' + label + ' 중시 특성 분포</div><div class="trait-bars">';
+            traitKeys.forEach(function(k) {
+                var tr = TRAITS[k];
+                var count = data.trait_distribution[k] || 0;
+                var pct = (count / total * 100).toFixed(0);
+                html += '<div class="trait-bar-item">' +
+                    '<span class="trait-bar-label">' + tr.icon + ' ' + tr.name + '</span>' +
+                    '<div class="trait-bar-bg"><div class="trait-bar-fill" style="width:' + pct + '%;background:' + tr.color + '"></div></div>' +
+                    '<span class="trait-bar-count">' + pct + '%</span>' +
+                    '</div>';
+            });
+            html += '</div></div>';
+        }
+    }
+
+    return html;
+}
+
+
+// ==================== 11. 처음으로 ====================
+function goHome() {
+    var ctx = EoEntry.state.context;
+    if (ctx === 'high') {
+        location.href = '/d_contents/01/high/';
+    } else {
+        location.href = '/d_contents/01/middle/';
+    }
+}
+</script>
+</body>
+</html>

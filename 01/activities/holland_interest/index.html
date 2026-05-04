@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>직업 흥미 유형 검사</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<link rel="stylesheet" href="/d_contents/01/common/common-entry.css">
+<style>
+/* 활동 고유 변수 (common-entry.css 기본값 덮어쓰기) */
+:root {
+  --bg: #eef2fb;--card: #ffffff;--card-hover: #f5f7fe;
+  --accent: #4361ee;--accent-dim: rgba(67,97,238,0.12);
+  --accent2: #3b82f6;--accent3: #FF6B6B;--accent4: #f59e0b;--accent5: #C084FC;
+  --text: #1a1a2e;--text-dim: #64748b;--border: #dde3f0;
+}
+
+/* === 스와이프 UI (이 활동 고유) === */
+.swipe-area{position:relative;height:260px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.swipe-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px 24px;text-align:center;width:100%;max-width:360px;transition:transform .3s,opacity .3s}
+.swipe-card.exit-left{transform:translateX(-120%) rotate(-15deg);opacity:0}
+.swipe-card.exit-right{transform:translateX(120%) rotate(15deg);opacity:0}
+.q-emoji{font-size:48px;margin-bottom:12px}
+.q-counter{font-size:12px;color:var(--text-dim);margin-bottom:8px}
+.q-text{font-size:16px;font-weight:500;line-height:1.5}
+.swipe-btns{display:flex;justify-content:center;gap:24px;margin-bottom:16px}
+.swipe-btn{width:72px;height:72px;border-radius:50%;border:2px solid var(--border);background:var(--card);font-size:32px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.swipe-btn.yes:hover{border-color:var(--accent);background:var(--accent-dim)}
+.swipe-btn.no:hover{border-color:var(--accent3);background:rgba(255,107,107,.1)}
+
+/* === 결과 고유 === */
+.chart-container{background:rgba(67,97,238,.04);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:8px;position:relative;height:260px}
+.result-tags{display:flex;flex-wrap:wrap;gap:6px}
+.result-tag{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500}
+.result-tag.interest{background:rgba(67,97,238,.1);color:var(--accent);border:1px solid rgba(67,97,238,.2)}
+.result-desc{font-size:13px;line-height:1.6;color:var(--text-dim);margin-top:8px;padding:12px;background:rgba(67,97,238,.04);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.result-section-sub{font-size:11px;color:var(--text-dim);margin-top:2px;margin-bottom:4px}
+.stat-chart-box{position:relative;height:220px;margin-top:10px}
+.stat-radar-box{position:relative;height:260px;margin-top:10px}
+.stat-chart-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px}
+.stat-legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim)}
+.stat-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+
+  <!-- 초기 화면 (공통 모듈) -->
+  <div class="screen active" id="entryScreen"></div>
+
+  <!-- 세션 뱃지 -->
+  <div id="user-badge">
+    <span id="badge-code"></span>
+    <span class="badge-dot">·</span>
+    <span id="badge-school"></span>
+    <span class="badge-dot">·</span>
+    <span id="badge-nick"></span>
+  </div>
+
+  <!-- 활동 화면 -->
+  <div class="screen" id="activityScreen">
+    <div class="mascot-comment">
+      <span class="name">🐶 멍이오</span><br>
+      활동 설명을 읽고, 마음에 들면 👍 <b>좋아!</b> 별로면 👎 <b>별로</b>를 눌러봐!
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">0 / 36</div>
+    </div>
+
+    <div class="swipe-area">
+      <div class="swipe-card" id="swipeCard">
+        <div class="q-emoji" id="swipeEmoji">🔧</div>
+        <div class="q-counter" id="swipeCounter">1 / 36</div>
+        <div class="q-text" id="swipeText">로딩 중...</div>
+      </div>
+    </div>
+    <div class="swipe-btns">
+      <button class="swipe-btn no" onclick="swipeAnswer(false)">👎</button>
+      <button class="swipe-btn yes" onclick="swipeAnswer(true)">👍</button>
+    </div>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div class="screen" id="resultScreen">
+    <div class="result-tabs">
+      <button class="result-tab active" data-tab="myResult" onclick="switchResultTab('myResult')">나의 결과</button>
+      <button class="result-tab" data-tab="groupStats" id="groupStatsTab" onclick="switchResultTab('groupStats')">우리 반 통계</button>
+      <button class="result-tab" data-tab="nationalStats" onclick="switchResultTab('nationalStats')">전체 통계</button>
+    </div>
+
+    <!-- 나의 결과 -->
+    <div class="result-content active" id="myResult">
+      <div class="result-card" id="result-card">
+        <div class="result-header">
+          <h2>🎯 나의 직업 흥미 유형</h2>
+          <div class="result-name" id="resultName"></div>
+        </div>
+        <div class="result-section">
+          <div class="result-section-title"><span class="icon">📊</span> 홀랜드 유형 프로필</div>
+          <div class="chart-container"><canvas id="chartInterest"></canvas></div>
+          <div class="result-tags" id="interestTags"></div>
+        </div>
+        <div class="result-section">
+          <div class="result-section-title"><span class="icon">🏆</span> 나의 TOP 2 유형</div>
+          <div class="result-desc" id="topDesc"></div>
+        </div>
+      </div>
+
+      <div class="bot-comment" id="bot-comment"></div>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="downloadResult()">📥 이미지 저장</button>
+        <button class="btn btn-secondary" onclick="location.reload()">🔄 다시 하기</button>
+        <button class="btn btn-secondary" onclick="goHome()">🏠 처음으로</button>
+      </div>
+    </div>
+
+    <!-- 우리 반 통계 -->
+    <div class="result-content" id="groupStats">
+      <div class="result-card">
+        <div class="result-section-title">📋 우리 반 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">참여자 수</span><span class="result-stat-value" id="group-participants">-</span></div>
+        <div class="result-stat-item"><span class="result-stat-label">제출 완료</span><span class="result-stat-value" id="group-submitted">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">📊 우리 반 유형 분포</div>
+        <div class="result-section-sub">1위 유형 기준 인원수</div>
+        <div class="stat-chart-box"><canvas id="chartGroupDist"></canvas></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">🎯 나 vs 반 평균 비교</div>
+        <div class="stat-radar-box"><canvas id="chartGroupRadar"></canvas></div>
+        <div class="stat-chart-legend">
+          <div class="stat-legend-item"><div class="stat-legend-dot" style="background:#4361ee"></div>나의 점수</div>
+          <div class="stat-legend-item"><div class="stat-legend-dot" style="background:#94a3b8"></div>반 평균</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:12px;">
+        <button class="btn btn-secondary" id="refreshGroupBtn" onclick="loadGroupStats()">새로고침</button>
+      </div>
+    </div>
+
+    <!-- 전체 통계 -->
+    <div class="result-content" id="nationalStats">
+      <div class="result-card">
+        <div class="result-section-title">🌍 전체 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">전체 참여자</span><span class="result-stat-value" id="national-participants">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">📊 전체 유형 분포</div>
+        <div class="result-section-sub">1위 유형 기준 비율 · 내 유형 강조 표시</div>
+        <div class="stat-chart-box"><canvas id="chartNationalDist"></canvas></div>
+      </div>
+      <div style="text-align:center;margin-top:12px;">
+        <button class="btn btn-secondary" id="refreshNationalBtn" onclick="loadNationalStats()">새로고침</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="/d_contents/01/common/common-entry.js"></script>
+<script>
+/* ══════════════════════════════════
+   DATA: 홀랜드 흥미 36문항
+   ══════════════════════════════════ */
+const HOLLAND_TYPES = ['R','I','A','S','E','C'];
+const HOLLAND_NAMES = {R:'실재형',I:'탐구형',A:'예술형',S:'사회형',E:'기업형',C:'관습형'};
+const HOLLAND_COLORS = {R:'#FF6B6B',I:'#3b82f6',A:'#C084FC',S:'#f59e0b',E:'#FF9F43',C:'#10b981'};
+const HOLLAND_DESC = {
+  R:'도구, 기계, 동물을 다루는 활동을 좋아하며 실제적이고 체계적인 일을 선호해.',
+  I:'관찰, 분석, 연구 등 지적 탐구 활동을 좋아하며 논리적으로 문제를 해결해.',
+  A:'창의적이고 자유로운 환경에서 예술적 표현과 창작 활동을 즐겨.',
+  S:'사람들을 돕고 가르치며, 함께 소통하고 협력하는 활동을 좋아해.',
+  E:'리더십을 발휘하고, 사람들을 설득하며 목표를 달성하는 일을 즐겨.',
+  C:'체계적이고 정확한 업무 처리를 좋아하며, 규칙적이고 조직적인 환경을 선호해.'
+};
+const interestQs = [
+  {type:'R', emoji:'🔧', text:'기계나 도구를 직접 다루는 것이 재미있다'},
+  {type:'R', emoji:'🏃', text:'몸을 움직이는 신체 활동을 좋아한다'},
+  {type:'R', emoji:'🔌', text:'전자 기기를 분해하거나 조립하는 것에 관심이 있다'},
+  {type:'R', emoji:'🌳', text:'야외에서 활동하는 것을 실내보다 좋아한다'},
+  {type:'R', emoji:'🚗', text:'자동차나 기계의 작동 원리에 관심이 있다'},
+  {type:'R', emoji:'🛠', text:'손으로 직접 무언가를 만드는 것을 좋아한다'},
+  {type:'I', emoji:'🔬', text:'과학 실험이나 연구 활동에 흥미가 있다'},
+  {type:'I', emoji:'📊', text:'데이터를 분석하고 규칙을 발견하는 것이 재미있다'},
+  {type:'I', emoji:'🧮', text:'수학이나 과학 문제를 푸는 것을 좋아한다'},
+  {type:'I', emoji:'📖', text:'새로운 지식을 탐구하고 학습하는 것을 즐긴다'},
+  {type:'I', emoji:'🤔', text:'"왜?"라는 질문을 자주 하며 원인을 파고드는 편이다'},
+  {type:'I', emoji:'💻', text:'프로그래밍이나 코딩에 관심이 있다'},
+  {type:'A', emoji:'🎨', text:'그림 그리기, 디자인 등 시각 예술 활동을 좋아한다'},
+  {type:'A', emoji:'🎵', text:'음악을 듣거나 악기를 연주하는 것을 즐긴다'},
+  {type:'A', emoji:'✍️', text:'글쓰기나 창작 활동에 흥미가 있다'},
+  {type:'A', emoji:'🎭', text:'연극, 영화, 공연 등에 관심이 많다'},
+  {type:'A', emoji:'📷', text:'사진이나 영상 촬영·편집을 좋아한다'},
+  {type:'A', emoji:'💡', text:'새롭고 독창적인 아이디어를 내는 것을 즐긴다'},
+  {type:'S', emoji:'🤝', text:'다른 사람을 돕거나 봉사하는 활동이 보람 있다'},
+  {type:'S', emoji:'🗣', text:'사람들과 이야기하며 소통하는 것을 좋아한다'},
+  {type:'S', emoji:'👨‍🏫', text:'친구에게 무언가를 가르쳐 주는 것을 좋아한다'},
+  {type:'S', emoji:'💬', text:'다른 사람의 고민을 들어주는 일이 자연스럽다'},
+  {type:'S', emoji:'👥', text:'팀 활동이나 모둠 활동을 혼자 하는 것보다 선호한다'},
+  {type:'S', emoji:'❤️', text:'사회 문제에 관심이 많고 해결하고 싶다'},
+  {type:'E', emoji:'📢', text:'사람들 앞에서 발표하거나 의견을 이끄는 것을 잘한다'},
+  {type:'E', emoji:'🏆', text:'경쟁 상황에서 이기기 위해 노력하는 것을 즐긴다'},
+  {type:'E', emoji:'💼', text:'리더 역할을 맡는 것이 자연스럽다'},
+  {type:'E', emoji:'🎯', text:'목표를 세우고 달성하는 과정이 즐겁다'},
+  {type:'E', emoji:'💰', text:'사업이나 창업에 관심이 있다'},
+  {type:'E', emoji:'🤝', text:'다른 사람을 설득하는 것을 잘하는 편이다'},
+  {type:'C', emoji:'📋', text:'정리정돈을 잘하고 체계적으로 일하는 편이다'},
+  {type:'C', emoji:'🔢', text:'숫자나 데이터를 정확하게 처리하는 것을 좋아한다'},
+  {type:'C', emoji:'📅', text:'계획을 세우고 그대로 실행하는 것을 선호한다'},
+  {type:'C', emoji:'📝', text:'서류 작업이나 기록 관리에 꼼꼼한 편이다'},
+  {type:'C', emoji:'⏰', text:'규칙과 절차를 따르는 것이 편하다'},
+  {type:'C', emoji:'🗂', text:'자료를 분류하고 정리하는 일이 재미있다'}
+];
+
+/* ══════════════════════════════════
+   STATE
+   ══════════════════════════════════ */
+let interestIdx = 0;
+let interestScores = {R:0,I:0,A:0,S:0,E:0,C:0};
+let shuffledInterest = [];
+let myTop1 = '';           // 내 1위 유형 코드 (전체 통계 하이라이트용)
+let groupDistChart = null;
+let groupRadarChart = null;
+let nationalDistChart = null;
+
+/* ══════════════════════════════════
+   FUNCTIONS
+   ══════════════════════════════════ */
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function startActivity(){
+  show('activityScreen');
+  shuffledInterest=[...interestQs].sort(function(){return Math.random()-0.5});
+  interestIdx=0;
+  interestScores={R:0,I:0,A:0,S:0,E:0,C:0};
+  showCard();
+}
+
+function showCard(){
+  if(interestIdx>=shuffledInterest.length){
+    finishActivity();
+    return;
+  }
+  var q=shuffledInterest[interestIdx];
+  document.getElementById('swipeEmoji').textContent=q.emoji;
+  document.getElementById('swipeText').textContent=q.text;
+  document.getElementById('swipeCounter').textContent=(interestIdx+1)+' / 36';
+  document.getElementById('progressFill').style.width=(interestIdx/36*100)+'%';
+  document.getElementById('progressText').textContent=(interestIdx)+' / 36';
+  var card=document.getElementById('swipeCard');
+  card.className='swipe-card';
+}
+
+var _swiping=false; // 빠른 연속 탭 방지
+function swipeAnswer(yes){
+  if(_swiping) return;
+  _swiping=true;
+  var q=shuffledInterest[interestIdx];
+  if(yes) interestScores[q.type]++;
+  var card=document.getElementById('swipeCard');
+  card.classList.add(yes?'exit-right':'exit-left');
+  setTimeout(function(){
+    interestIdx++;
+    _swiping=false;
+    showCard();
+  },300);
+}
+
+function finishActivity(){
+  show('resultScreen');
+  document.getElementById('progressFill').style.width='100%';
+  document.getElementById('progressText').textContent='36 / 36';
+
+  // 혼자 하기일 때 우리 반 통계 탭 숨김
+  if(EoEntry.state.mode!=='group'){
+    var groupTab=document.getElementById('groupStatsTab');
+    if(groupTab) groupTab.style.display='none';
+  }
+
+  showMyResult();
+  saveResult();
+}
+
+function showMyResult(){
+  var s=EoEntry.state;
+  document.getElementById('resultName').textContent=(s.nickname||'')+'의 흥미 유형 프로필';
+
+  // 레이더 차트
+  var labels=HOLLAND_TYPES.map(function(t){return HOLLAND_NAMES[t]});
+  var data=HOLLAND_TYPES.map(function(t){return interestScores[t]});
+  var colors=HOLLAND_TYPES.map(function(t){return HOLLAND_COLORS[t]});
+
+  new Chart(document.getElementById('chartInterest'),{
+    type:'radar',
+    data:{
+      labels:labels,
+      datasets:[{
+        data:data,
+        backgroundColor:'rgba(67,97,238,0.06)',
+        borderColor:'#4361ee',
+        borderWidth:2,
+        pointBackgroundColor:colors,
+        pointBorderColor:'#fff',
+        pointRadius:5
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      devicePixelRatio: (window.devicePixelRatio||1) * 2,
+      plugins:{legend:{display:false},datalabels:{display:false}},
+      scales:{
+        r:{
+          beginAtZero:true,
+          max:6,
+          ticks:{display:false},
+          grid:{color:'rgba(0,0,0,0.08)'},
+          pointLabels:{color:'#1a1a2e',font:{size:12,family:'Noto Sans KR'}}
+        }
+      }
+    }
+  });
+
+  // TOP 2 유형
+  var sorted=HOLLAND_TYPES.map(function(t){return{type:t,score:interestScores[t]}}).sort(function(a,b){return b.score-a.score});
+  var top2=sorted.slice(0,2);
+  myTop1=top2[0].type; // 전체 통계 하이라이트용
+  document.getElementById('interestTags').innerHTML=top2.map(function(t){
+    return '<span class="result-tag interest">'+HOLLAND_NAMES[t.type]+'('+t.type+') — '+t.score+'점</span>';
+  }).join('');
+
+  document.getElementById('topDesc').innerHTML=top2.map(function(t){
+    return '<div style="margin-bottom:8px"><strong>'+HOLLAND_NAMES[t.type]+'('+t.type+')</strong><br>'+HOLLAND_DESC[t.type]+'</div>';
+  }).join('');
+
+  // 이오봇 코멘트
+  document.getElementById('bot-comment').innerHTML=
+    '<strong>'+s.nickname+'</strong> 님의 직업 흥미 유형은 <strong>'+top2.map(function(t){return HOLLAND_NAMES[t.type]}).join('·')+'</strong>이야!<br><br>'+
+    HOLLAND_DESC[top2[0].type]+'<br><br>'+
+    '이 결과를 바탕으로 관심 있는 직업을 탐색해 보면 좋겠어! 💪';
+}
+
+/* ══════════════════════════════════
+   API: 결과 저장 / 통계 로드
+   ══════════════════════════════════ */
+async function saveResult(){
+  try{
+    var top2Keys=HOLLAND_TYPES.map(function(t){return{type:t,score:interestScores[t]}})
+                  .sort(function(a,b){return b.score-a.score}).slice(0,2).map(function(t){return t.type});
+    await fetch(EoEntry.API_BASE+'/result.php?action=submit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        participant_id:EoEntry.state.participantId,
+        activity_id:'holland_interest',
+        group_id:EoEntry.state.groupId||null,
+        result_data:{
+          scores:interestScores,
+          top2:top2Keys,
+          timestamp:new Date().toISOString()
+        }
+      })
+    });
+  }catch(e){console.error('Save error:',e);}
+}
+
+async function loadGroupStats(){
+  EoEntry.refreshCooldown('refreshGroupBtn');
+  try{
+    var res=await fetch(EoEntry.API_BASE+'/result.php?action=group&group_id='+EoEntry.state.groupId+'&activity_id=holland_interest');
+    var data=await res.json();
+    document.getElementById('group-participants').textContent=(data.total_participants||0)+'명';
+    document.getElementById('group-submitted').textContent=(data.submitted_count||0)+'명';
+
+    var dist=data.type_distribution||{};
+    var distData=HOLLAND_TYPES.map(function(t){return dist[t]||0;});
+    var distLabels=HOLLAND_TYPES.map(function(t){return HOLLAND_NAMES[t]+'('+t+')';});
+    var distColors=HOLLAND_TYPES.map(function(t){return HOLLAND_COLORS[t];});
+
+    // ① 유형별 분포 막대
+    if(groupDistChart){groupDistChart.destroy();}
+    groupDistChart=new Chart(document.getElementById('chartGroupDist'),{
+      type:'bar',
+      data:{labels:distLabels,datasets:[{data:distData,backgroundColor:distColors,borderWidth:0,barThickness:14}]},
+      options:{
+        indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        layout:{padding:{right:40}},
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(c){return c.parsed.x+'명';}}},
+          datalabels:{anchor:'end',align:'end',formatter:function(v){return v+'명';},font:{size:11,weight:'500'},color:'#64748b'}
+        },
+        scales:{
+          x:{beginAtZero:true,ticks:{stepSize:1,font:{size:11}},grid:{color:'rgba(0,0,0,0.05)'}},
+          y:{ticks:{font:{size:12}},grid:{display:false}}
+        }
+      }
+    });
+
+    // ② 나 vs 반 평균 레이더
+    var avg=data.type_avg_scores||{};
+    var myData=HOLLAND_TYPES.map(function(t){return interestScores[t]||0;});
+    var avgData=HOLLAND_TYPES.map(function(t){return avg[t]||0;});
+    var radarLabels=HOLLAND_TYPES.map(function(t){return HOLLAND_NAMES[t];});
+
+    if(groupRadarChart){groupRadarChart.destroy();}
+    groupRadarChart=new Chart(document.getElementById('chartGroupRadar'),{
+      type:'radar',
+      data:{
+        labels:radarLabels,
+        datasets:[
+          {label:'나의 점수',data:myData,backgroundColor:'rgba(67,97,238,0.1)',borderColor:'#4361ee',borderWidth:2,pointBackgroundColor:'#4361ee',pointRadius:4},
+          {label:'반 평균',data:avgData,backgroundColor:'rgba(148,163,184,0.1)',borderColor:'#94a3b8',borderWidth:2,pointBackgroundColor:'#94a3b8',pointRadius:4}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},datalabels:{display:false}},
+        scales:{r:{beginAtZero:true,max:6,ticks:{display:false},grid:{color:'rgba(0,0,0,0.08)'},pointLabels:{font:{size:12,family:'Noto Sans KR'}}}}
+      }
+    });
+  }catch(e){console.error('Group stats error:',e);}
+}
+
+async function loadNationalStats(){
+  EoEntry.refreshCooldown('refreshNationalBtn');
+  try{
+    var res=await fetch(EoEntry.API_BASE+'/result.php?action=national&activity_id=holland_interest');
+    var data=await res.json();
+    var total=data.total_participants||0;
+    document.getElementById('national-participants').textContent=total+'명';
+
+    var dist=data.type_distribution||{};
+    var distLabels=HOLLAND_TYPES.map(function(t){return HOLLAND_NAMES[t]+'('+t+')';});
+    var distData=HOLLAND_TYPES.map(function(t){return dist[t]||0;});
+    var bgColors=HOLLAND_TYPES.map(function(t){
+      return t===myTop1 ? HOLLAND_COLORS[t] : 'rgba(148,163,184,0.5)';
+    });
+
+    if(nationalDistChart){nationalDistChart.destroy();}
+    nationalDistChart=new Chart(document.getElementById('chartNationalDist'),{
+      type:'bar',
+      data:{labels:distLabels,datasets:[{data:distData,backgroundColor:bgColors,borderWidth:0,barThickness:14}]},
+      options:{
+        indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        layout:{padding:{right:44}},
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(c){
+            var pct=total>0?Math.round(c.parsed.x/total*100):0;
+            return c.parsed.x+'명 ('+pct+'%)';
+          }}},
+          datalabels:{anchor:'end',align:'end',
+            formatter:function(v){return total>0?Math.round(v/total*100)+'%':'0%';},
+            font:{size:11,weight:'500'},color:'#64748b'}
+        },
+        scales:{
+          x:{beginAtZero:true,ticks:{stepSize:1,font:{size:11}},grid:{color:'rgba(0,0,0,0.05)'}},
+          y:{ticks:{font:{size:12}},grid:{display:false}}
+        }
+      }
+    });
+  }catch(e){console.error('National stats error:',e);}
+}
+
+/* ══════════════════════════════════
+   UI 유틸
+   ══════════════════════════════════ */
+function switchResultTab(tabName){
+  document.querySelectorAll('.result-tab').forEach(function(t){t.classList.remove('active')});
+  document.querySelectorAll('.result-content').forEach(function(c){c.classList.remove('active')});
+  document.querySelector('[data-tab="'+tabName+'"]').classList.add('active');
+  document.getElementById(tabName).classList.add('active');
+}
+
+async function downloadResult(){
+  try{
+    var dpr=window.devicePixelRatio||1;
+    var badge=document.getElementById('user-badge');
+    var prevBadge=badge?badge.style.display:'';
+    if(badge) badge.style.display='none';
+    var canvas=await html2canvas(document.getElementById('result-card'),{
+      backgroundColor:'#f5f8ff',
+      scale: dpr * 2,
+      useCORS:true,
+      logging:false,
+      scrollX:0,
+      scrollY:-window.scrollY
+    });
+    if(badge) badge.style.display=prevBadge;
+    var link=document.createElement('a');
+    link.download='흥미유형_'+EoEntry.state.nickname+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){alert('이미지 저장에 실패했습니다.');}
+}
+
+function goHome(){
+  var ctx=EoEntry.state.context;
+  if(ctx==='high'){location.href='/d_contents/01/high/';}
+  else if(ctx==='middle'){location.href='/d_contents/01/middle/';}
+  else{location.href='/d_contents/01/middle/';}
+}
+
+/* ══════════════════════════════════
+   INIT
+   ══════════════════════════════════ */
+Chart.register(ChartDataLabels);
+
+EoEntry.init({
+  activityId:'holland_interest',
+  title:'🎯 직업 흥미 유형 검사',
+  subtitle:'홀랜드 검사로 나의 흥미 유형을 알아보세요!',
+  onStart:function(){startActivity();}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>중학교 진로와 직업 — 디지털 활동 콘텐츠 플랫폼</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f6fa;--white:#fff;--text:#1a1a2e;--dim:#7a7a9a;--border:#e4e6f0;--u1:#10b981;--u1bg:#ecfdf5;--u1lt:#d1fae5;--u2:#3b82f6;--u2bg:#eff6ff;--u2lt:#dbeafe;--u3:#8b5cf6;--u3bg:#f5f3ff;--u3lt:#ede9fe;--shadow:0 2px 12px rgba(0,0,0,.06);--shadow-h:0 8px 32px rgba(0,0,0,.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* === Header === */
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:0 20px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.04)}
+.header-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:12px 0;gap:12px}
+.logo-area{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.logo-area:hover{opacity:.85}
+.logo-area .brand{font-size:18px;font-weight:900;line-height:1.2}
+.logo-area .brand .hl{color:var(--u1)}
+.logo-area .brand-sub{font-size:9px;color:var(--dim)}
+.nav-menus{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.nav-btn{padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:var(--white);font-size:12px;font-weight:600;color:var(--dim);cursor:pointer;text-decoration:none;transition:all .2s;font-family:inherit;display:inline-flex;align-items:center;gap:4px}
+.nav-btn:hover{border-color:var(--u1);color:var(--u1);background:var(--u1bg)}
+.nav-btn.feedback{background:#e67e22;color:#fff;border-color:#e67e22;animation:pulse-feedback 2s infinite}
+.nav-btn.feedback:hover{background:#d35400;border-color:#d35400}
+@keyframes pulse-feedback{0%,100%{box-shadow:0 0 0 0 rgba(230,126,34,.4)}50%{box-shadow:0 0 0 6px rgba(230,126,34,0)}}
+
+/* === Popups === */
+.popup-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.3);z-index:200;align-items:center;justify-content:center}
+.popup-overlay.show{display:flex}
+.popup{background:var(--white);border-radius:16px;padding:24px;max-width:500px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.15)}
+.popup h3{font-size:16px;font-weight:700;margin-bottom:16px;text-align:center}
+.popup-books{display:flex;gap:16px;justify-content:center}
+.popup-book{text-align:center;text-decoration:none;color:var(--text);padding:12px;border:1px solid var(--border);border-radius:12px;transition:all .2s;flex:1}
+.popup-book:hover{border-color:var(--u1);box-shadow:var(--shadow-h);transform:translateY(-2px)}
+.popup-book .pb-cover{width:90px;height:120px;border-radius:6px;margin:0 auto 8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.popup-book .pb-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.popup-book .pb-name{font-size:12px;font-weight:700}
+.popup-book .pb-pub{font-size:10px;color:var(--dim)}
+.popup-close{display:block;text-align:center;margin-top:16px;font-size:13px;color:var(--dim);cursor:pointer}
+.popup-close:hover{color:var(--text)}
+
+/* === Tabs === */
+.tab-nav{max-width:960px;margin:0 auto;display:flex;gap:4px;padding:16px 20px 0}
+.tab-btn{flex:1;padding:13px 8px;border:2px solid var(--border);border-bottom:none;border-radius:14px 14px 0 0;background:var(--white);cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;color:var(--dim);transition:all .2s;text-align:center;line-height:1.3}
+.tab-btn .tab-sub{font-size:10px;font-weight:400;display:block;margin-top:2px}
+.tab-btn:hover{background:var(--bg)}
+.tab-btn.active{color:#fff;border-color:transparent}
+.tab-btn[data-unit="1"].active{background:var(--u1)}
+.tab-btn[data-unit="2"].active{background:var(--u2)}
+.tab-btn[data-unit="3"].active{background:var(--u3)}
+
+/* === Content === */
+.tab-content{max-width:960px;margin:0 auto;background:var(--white);border-radius:0 0 20px 20px;border:1px solid var(--border);border-top:none;padding:24px 20px 32px;box-shadow:var(--shadow);margin-bottom:32px}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* === Unit Header === */
+.unit-header{display:flex;align-items:center;gap:16px;padding:16px 20px;border-radius:14px;margin-bottom:20px}
+.unit-header.u1{background:var(--u1bg)}
+.unit-header.u2{background:var(--u2bg)}
+.unit-header.u3{background:var(--u3bg)}
+.unit-header .uh-icon{font-size:40px;flex-shrink:0}
+.unit-header .uh-text h2{font-size:18px;font-weight:900;margin-bottom:4px}
+.unit-header .uh-text p{font-size:12px;color:var(--dim);line-height:1.5}
+.unit-header .uh-count{margin-left:auto;text-align:center;padding:8px 14px;border-radius:10px;font-weight:700;font-size:13px;flex-shrink:0}
+.unit-header.u1 .uh-count{background:var(--u1lt);color:var(--u1)}
+.unit-header.u2 .uh-count{background:var(--u2lt);color:var(--u2)}
+.unit-header.u3 .uh-count{background:var(--u3lt);color:var(--u3)}
+
+/* === Standard Groups & Cards === */
+.std-group{margin-bottom:20px}
+.std-label{font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;display:inline-block;margin-bottom:10px}
+.std-label.u1{background:var(--u1bg);color:var(--u1)}
+.std-label.u2{background:var(--u2bg);color:var(--u2)}
+.std-label.u3{background:var(--u3bg);color:var(--u3)}
+
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 14px;text-decoration:none;color:var(--text);transition:all .25s;position:relative;display:flex;flex-direction:column;gap:5px}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-h)}
+.card .c-emoji{font-size:26px}
+.card .c-name{font-weight:700;font-size:13px;line-height:1.3}
+.card .c-desc{font-size:10px;color:var(--dim);line-height:1.4}
+.card .c-badge{position:absolute;top:10px;right:10px;font-size:8px;padding:2px 8px;border-radius:10px;font-weight:700}
+.badge-u1{background:var(--u1lt);color:var(--u1)}
+.badge-u2{background:var(--u2lt);color:var(--u2)}
+.badge-u3{background:var(--u3lt);color:var(--u3)}
+
+/* === DNA Card === */
+.card.dna-card{grid-column:1/-1;flex-direction:row;align-items:center;gap:12px;background:linear-gradient(135deg,var(--u1bg),#f0f9ff);border:2px dashed var(--u1)}
+.card.dna-card:hover{border-style:solid}
+.card.dna-card .c-emoji{font-size:28px;flex-shrink:0}
+
+/* === 준비중 (비활성화) 카드 === */
+.card.disabled{opacity:0.45;pointer-events:none;cursor:default}
+.card.disabled:hover{transform:none;box-shadow:none}
+.card.disabled .c-badge{background:#e5e7eb;color:#9ca3af}
+
+/* === Beta Label === */
+.beta-tag{display:inline-block;font-size:9px;font-weight:700;color:#e67e22;background:#fef3e2;border:1px solid #f5d0a9;border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:middle;letter-spacing:.5px}
+
+/* === Notice Banner === */
+.notice-bar{max-width:960px;margin:12px auto 0;padding:10px 16px;background:#fff8e1;border:1px solid #ffe082;border-radius:10px;font-size:12px;color:#8d6e00;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.notice-bar .close-btn{cursor:pointer;color:#8d6e00;font-size:16px;padding:0 4px;background:none;border:none;font-family:inherit}
+.notice-bar .close-btn:hover{color:#5d4700}
+
+/* === Footer === */
+.footer{text-align:center;padding:20px;font-size:11px;color:var(--dim);display:flex;flex-direction:column;align-items:center;gap:6px}
+.footer .notice{font-size:10px;color:#bbb}
+
+/* === QR Code Button === */
+.nav-btn.qr-btn{background:var(--u1);color:#fff;border-color:var(--u1)}
+.nav-btn.qr-btn:hover{background:#059669;border-color:#059669;color:#fff}
+
+/* === QR Code Popup === */
+.qr-popup{background:var(--white);border-radius:16px;padding:32px 28px 24px;max-width:480px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.15);text-align:center}
+.qr-popup .qr-title{font-size:20px;font-weight:900;color:var(--text);margin-bottom:4px}
+.qr-popup .qr-subtitle{font-size:13px;color:var(--dim);margin-bottom:20px}
+.qr-popup .qr-image{width:280px;height:280px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+.qr-popup .qr-image img{width:100%;height:100%;object-fit:contain}
+.qr-popup .qr-url{font-size:18px;font-weight:700;color:var(--u1);letter-spacing:.5px;word-break:break-all}
+
+/* === Responsive === */
+@media(max-width:600px){
+    .tab-btn{font-size:12px;padding:10px 6px}
+    .card-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+    .unit-header .uh-icon{font-size:28px}
+    .nav-menus{gap:2px}
+    .nav-btn{padding:6px 8px;font-size:10px}
+    .qr-popup .qr-image{width:200px;height:200px}
+    .qr-popup .qr-title{font-size:17px}
+    .qr-popup .qr-url{font-size:14px}
+}
+@media(max-width:380px){
+    .card-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== Header ===== -->
+<div class="header"><div class="header-inner">
+    <a class="logo-area" href="./">
+        <div>
+            <div class="brand"><span class="hl">중학교</span> 진로와 직업 <span class="beta-tag">BETA</span></div>
+            <div class="brand-sub">디지털 활동 콘텐츠 플랫폼</div>
+        </div>
+    </a>
+    <div class="nav-menus">
+        <a class="nav-btn qr-btn" href="#" onclick="showQR();return false">📱 QR 코드</a>
+        <a class="nav-btn" href="#" onclick="showGuide();return false">활용 가이드</a>
+        <a class="nav-btn" href="#" onclick="showBooks();return false">교과서</a>
+        <a class="nav-btn feedback" href="https://docs.google.com/forms/d/e/1FAIpQLScLkd6CX2D_4kHZGfzobT8KkNPfKe_0e2oK9iRQZ3FAneBLLg/viewform?usp=dialog" target="_blank">💬 피드백</a>
+    </div>
+</div></div>
+
+<!-- ===== QR 코드 팝업 ===== -->
+<div class="popup-overlay" id="qrPopup" onclick="if(event.target===this)this.classList.remove('show')">
+<div class="qr-popup">
+    <div class="qr-title">📱 중학교 진로와 직업</div>
+    <div class="qr-subtitle">QR 코드를 스캔하면 플랫폼에 접속할 수 있습니다</div>
+    <div class="qr-image"><img src="/d_contents/01/img/qr/qr_m.svg" alt="중학교 진로와 직업 QR 코드"></div>
+    <div class="qr-url">eotextbook.com/d_contents/01/middle</div>
+    <div class="popup-close" onclick="document.getElementById('qrPopup').classList.remove('show')">닫기</div>
+</div>
+</div>
+
+<!-- ===== 개발 중 공지 배너 ===== -->
+<div class="notice-bar" id="devNotice">
+    <span>🚧 현재 개발 중인 베타 버전입니다. 콘텐츠와 기능이 예고 없이 변경되거나 삭제될 수 있습니다.<br>🎁 오류나 개선 의견을 우측 상단 <strong>피드백</strong> 버튼으로 보내주시면 소정의 상품을 드립니다.</span>
+    <button class="close-btn" onclick="document.getElementById('devNotice').style.display='none'">✕</button>
+</div>
+
+<!-- ===== 교과서 팝업 ===== -->
+<div class="popup-overlay" id="bookPopup" onclick="if(event.target===this)this.classList.remove('show')">
+<div class="popup">
+    <h3>진로와 직업 교과서</h3>
+    <div class="popup-books">
+        <a class="popup-book" href="https://eobooks.com/%ec%a7%84%eb%a1%9c%ec%99%80-%ec%a7%81%ec%97%85-3/" target="_blank">
+            <div class="pb-cover"><img src="https://eobooks.com/wp-content/uploads/2024/08/12.-%EC%A4%91_%EB%B6%81%EC%8A%A4_%EC%A7%84%EB%A1%9C%EC%99%80-%EC%A7%81%EC%97%85-%ED%91%9C%EC%A7%80.jpg.webp" alt="이오북스 진로와 직업 표지"></div>
+            <div class="pb-name">진로와 직업</div>
+            <div class="pb-pub">이오북스</div>
+        </a>
+        <a class="popup-book" href="https://eobooks.com/%ec%a7%84%eb%a1%9c%ec%99%80-%ec%a7%81%ec%97%85-4/" target="_blank">
+            <div class="pb-cover"><img src="https://eobooks.com/wp-content/uploads/2024/08/10.-%EC%A4%91_%EB%AF%B8%EB%94%94%EC%96%B4_%EC%A7%84%EB%A1%9C%EC%99%80-%EC%A7%81%EC%97%85-%ED%91%9C%EC%A7%80.jpg.webp" alt="이오미디어 진로와 직업 표지"></div>
+            <div class="pb-name">진로와 직업</div>
+            <div class="pb-pub">이오미디어</div>
+        </a>
+    </div>
+    <div class="popup-close" onclick="document.getElementById('bookPopup').classList.remove('show')">닫기</div>
+</div>
+</div>
+
+<!-- ===== 활용 가이드 팝업 (v3 개방형 반영) ===== -->
+<div class="popup-overlay" id="guidePopup" onclick="if(event.target===this)this.classList.remove('show')">
+<div class="popup">
+    <h3>활용 가이드</h3>
+    <div style="font-size:13px;line-height:1.8;color:#555">
+        <p style="margin-bottom:12px"><strong>수업에서 이렇게 활용하세요!</strong></p>
+        <p>1️⃣ 활동을 클릭하면 활동 페이지로 이동합니다.</p>
+        <p>2️⃣ <strong>함께하기 코드</strong>를 정하고 학생들에게 안내하세요.</p>
+        <p>3️⃣ 학생은 함께하기 코드, 학교, 별명을 입력하면 바로 활동을 시작합니다.</p>
+        <p>4️⃣ 활동 완료 시 나의 결과, 우리 반 통계, 전체 통계를 확인할 수 있습니다.</p>
+        <hr style="border:none;border-top:1px solid #eee;margin:12px 0">
+        <p style="font-size:12px;color:#999">
+            💡 각 활동은 8~12분 소요됩니다.<br>
+            📱 PC, 태블릿, 스마트폰 모두 지원합니다.<br>
+            💾 결과 카드를 이미지로 다운로드할 수 있습니다.<br>
+            🎮 함께하기 코드 없이 혼자 활동하는 것도 가능합니다.
+        </p>
+    </div>
+    <div class="popup-close" onclick="document.getElementById('guidePopup').classList.remove('show')">닫기</div>
+</div>
+</div>
+
+<!-- ===== Unit Tabs ===== -->
+<div class="tab-nav">
+    <button class="tab-btn active" data-unit="1" onclick="switchTab(1)">Ⅰ. 진로와 나의 이해<span class="tab-sub">8개 활동</span></button>
+    <button class="tab-btn" data-unit="2" onclick="switchTab(2)">Ⅱ. 직업 세계와 진로 탐색<span class="tab-sub">7개 활동</span></button>
+    <button class="tab-btn" data-unit="3" onclick="switchTab(3)">Ⅲ. 진로 설계와 실천<span class="tab-sub">6개 활동</span></button>
+</div>
+
+<div class="tab-content">
+
+<!-- ==================== 1단원: 진로와 나의 이해 ==================== -->
+<div class="tab-panel active" id="panel-1">
+    <div class="unit-header u1">
+        <div class="uh-icon">🧭</div>
+        <div class="uh-text">
+            <h2>Ⅰ. 진로와 나의 이해</h2>
+            <p>자신의 흥미, 적성, 성격, 가치관을 탐색하고<br>직업 세계와 연결해 봅니다.</p>
+        </div>
+        <div class="uh-count">8개 활동</div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u1" title="[9진로01-01] 진로와 직업의 의미를 이해하고 다양한 직업인의 진로 특성과 삶의 모습을 탐색한다.">진로와 직업의 의미 탐색</div>
+        <div class="card-grid">
+            <a class="card" href="/d_contents/01/activities/job_card_adventure/?context=middle">
+                <span class="c-badge badge-u1">개별</span>
+                <div class="c-emoji">🃏</div>
+                <div class="c-name">직업 카드 어드벤처</div>
+                <div class="c-desc">직업 가치 월드컵 + 적성-직업 카드 매칭</div>
+            </a>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u1" title="[9진로01-02] 다양한 방법으로 자신의 진로 특성을 파악하고 긍정적 자아 개념을 갖는다.">다양한 방법으로 자신의 특성 탐색</div>
+        <div class="card-grid">
+            <a class="card" href="/d_contents/01/activities/holland_interest/?context=middle">
+                <span class="c-badge badge-u1">개별</span>
+                <div class="c-emoji">🎯</div>
+                <div class="c-name">직업 흥미 검사</div>
+                <div class="c-desc">홀랜드 RIASEC 6유형</div>
+            </a>
+            <a class="card" href="/d_contents/01/activities/aptitude_check/?context=middle">
+                <span class="c-badge badge-u1">개별</span>
+                <div class="c-emoji">💡</div>
+                <div class="c-name">직업 적성 검사</div>
+                <div class="c-desc">11개 적성 영역 탐색</div>
+            </a>
+            <a class="card" href="/d_contents/01/activities/mbti_personality/?context=middle">
+                <span class="c-badge badge-u1">개별</span>
+                <div class="c-emoji">🧠</div>
+                <div class="c-name">성격 유형 검사</div>
+                <div class="c-desc">MBTI 4축 분석</div>
+            </a>
+            <a class="card" href="/d_contents/01/activities/work_values/?context=middle">
+                <span class="c-badge badge-u1">개별</span>
+                <div class="c-emoji">⭐</div>
+                <div class="c-name">직업 가치관 검사</div>
+                <div class="c-desc">12가지 가치 랭킹</div>
+            </a>
+            <a class="card" href="/d_contents/01/activities/strength_intro/?context=middle">
+                <span class="c-badge badge-u1">모둠</span>
+                <div class="c-emoji">✨</div>
+                <div class="c-name">나를 소개합니다!</div>
+                <div class="c-desc">강점 탐색 + 조해리의 창</div>
+            </a>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u1" title="[9진로01-03] 함께 일하고 싶은 직업인의 특성을 알아보고 바람직한 직업인의 자세를 갖는다.">함께 일하고 싶은 직업인의 특성</div>
+        <div class="card-grid">
+            <a class="card" href="/d_contents/01/activities/dream_team_mars/?context=middle">
+                <span class="c-badge badge-u1">개별</span>
+                <div class="c-emoji">🚀</div>
+                <div class="c-name">드림팀 마스</div>
+                <div class="c-desc">화성 선발대 구성 + 위기 대응</div>
+            </a>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u1" title="[9진로01-04] 일과 여가의 의미와 상호 관계를 이해하고 조화롭고 행복한 삶을 생각한다.">일과 여가의 균형</div>
+        <div class="card-grid">
+            <a class="card" href="/d_contents/01/activities/life_balance_check/?context=middle">
+                <span class="c-badge badge-u1">개별</span>
+                <div class="c-emoji">⚖️</div>
+                <div class="c-name">나의 균형 찾기</div>
+                <div class="c-desc">일·여가 균형 탐색</div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 2단원: 직업 세계와 진로 탐색 ==================== -->
+<div class="tab-panel" id="panel-2">
+    <div class="unit-header u2">
+        <div class="uh-icon">🌍</div>
+        <div class="uh-text">
+            <h2>Ⅱ. 직업 세계와 진로 탐색</h2>
+            <p>직업 세계의 변화를 이해하고<br>다양한 진로 탐색 활동을 경험합니다.</p>
+        </div>
+        <div class="uh-count">7개 활동</div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u2" title="[9진로02-01] 사회 변화에 따른 직업 세계의 변화를 이해한다.">직업 세계의 변화</div>
+        <div class="card-grid">
+            <a class="card" href="/d_contents/01/activities/job_change_quiz/?context=middle">
+                <span class="c-badge badge-u2">개별</span>
+                <div class="c-emoji">⚡</div>
+                <div class="c-name">직업 변화 스피드 퀴즈</div>
+                <div class="c-desc">사회 변화 → 직업 변화 인과 사슬 추적</div>
+            </a>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u2" title="[9진로02-02] 진로 경로의 다양성과 가변성을 이해하고, 유연한 진로 탐색 태도를 함양한다.">진로 경로의 다양성과 가변성</div>
+        <div class="card-grid">
+            <div class="card disabled">
+                <span class="c-badge badge-u2">준비중</span>
+                <div class="c-emoji">🧭</div>
+                <div class="c-name">진로 내비게이터</div>
+                <div class="c-desc">맞춤 진로 탐색 가이드</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u2" title="[9진로02-03] 진로 정보를 탐색하는 다양한 방법을 알아보고 관심 분야의 진로 정보를 탐색하고 활용한다.">진로 정보 탐색과 활용</div>
+        <div class="card-grid">
+            <div class="card disabled">
+                <span class="c-badge badge-u2">준비중</span>
+                <div class="c-emoji">🔍</div>
+                <div class="c-name">직업 정보 탐험대</div>
+                <div class="c-desc">직업 정보 수집 미션</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u2" title="[9진로02-04] 다양한 경험과 진로 활동을 자신의 진로와 연계하며 주도적인 진로 탐색 태도를 함양한다.">다양한 경험과 진로 연계</div>
+        <div class="card-grid">
+            <div class="card disabled">
+                <span class="c-badge badge-u2">준비중</span>
+                <div class="c-emoji">🔗</div>
+                <div class="c-name">경험 커넥터</div>
+                <div class="c-desc">진로 경험 연결하기</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u2" title="[9진로02-05] 고등학교의 유형, 특성, 교육과정에 대한 정보를 통해 교육 기회를 탐색한다.">고등학교 유형·특성·교육과정 탐색</div>
+        <div class="card-grid">
+            <div class="card disabled">
+                <span class="c-badge badge-u2">준비중</span>
+                <div class="c-emoji">🏫</div>
+                <div class="c-name">고등학교 매칭 시뮬레이터</div>
+                <div class="c-desc">고등학교 유형 탐색</div>
+            </div>
+            <div class="card disabled">
+                <span class="c-badge badge-u2">준비중</span>
+                <div class="c-emoji">📋</div>
+                <div class="c-name">나의 시간표 디자이너</div>
+                <div class="c-desc">고등학교 시간표 설계</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u2" title="[9진로02-06] 창업의 특성과 창업가 정신을 이해하고 그 중요성을 인식한다.">창업의 특성과 창업가 정신</div>
+        <div class="card-grid">
+            <div class="card disabled">
+                <span class="c-badge badge-u2">준비중</span>
+                <div class="c-emoji">🚀</div>
+                <div class="c-name">스타트업 챌린지</div>
+                <div class="c-desc">창업 시뮬레이션 체험</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 3단원: 진로 설계와 실천 ==================== -->
+<div class="tab-panel" id="panel-3">
+    <div class="unit-header u3">
+        <div class="uh-icon">🗺️</div>
+        <div class="uh-text">
+            <h2>Ⅲ. 진로 설계와 실천</h2>
+            <p>진로 의사 결정 과정을 이해하고<br>자신의 진로 계획을 세워 봅니다.</p>
+        </div>
+        <div class="uh-count">6개 활동</div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u3" title="[9진로03-01] 진로의사결정의 방법과 고려 사항을 이해하고 진로를 잠정적으로 결정한다.">진로 의사 결정</div>
+        <div class="card-grid">
+            <a class="card" href="/d_contents/01/activities/decision_style/?context=middle">
+                <span class="c-badge badge-u3">개별</span>
+                <div class="c-emoji">🧭</div>
+                <div class="c-name">나의 의사 결정 유형은?</div>
+                <div class="c-desc">의사 결정 유형 탐색</div>
+            </a>
+            <div class="card disabled">
+                <span class="c-badge badge-u3">준비중</span>
+                <div class="c-emoji">🎯</div>
+                <div class="c-name">진로 의사 결정 시뮬레이터</div>
+                <div class="c-desc">의사 결정 과정 체험</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u3" title="[9진로03-02] 관심 진로 분야의 다양한 진로 경로를 탐색하고 자신의 진로 경로를 설정한다.">진로 경로 탐색과 설정</div>
+        <div class="card-grid">
+            <div class="card disabled">
+                <span class="c-badge badge-u3">준비중</span>
+                <div class="c-emoji">🗺</div>
+                <div class="c-name">나의 진로 로드맵 빌더</div>
+                <div class="c-desc">중장기 진로 계획 수립</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u3" title="[9진로03-03] 진로 목표 성취를 위해 학습의 필요성을 이해하고, 학습 계획을 자기 주도적으로 수립하여 실천한다.">자기 주도적 학습 계획</div>
+        <div class="card-grid">
+            <div class="card disabled">
+                <span class="c-badge badge-u3">준비중</span>
+                <div class="c-emoji">📚</div>
+                <div class="c-name">학습 파워 체크업</div>
+                <div class="c-desc">학습 습관 진단·개선</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="std-group">
+        <div class="std-label u3" title="[9진로03-04] 졸업 이후의 진로 계획을 수립하고 자기 관리 및 진로 준비 방법을 알아보고 실천한다.">상급 학교 진학 준비</div>
+        <div class="card-grid">
+            <div class="card disabled">
+                <span class="c-badge badge-u3">준비중</span>
+                <div class="c-emoji">🎓</div>
+                <div class="c-name">고등학교 진학 플래너</div>
+                <div class="c-desc">진학 정보 탐색·계획</div>
+            </div>
+            <div class="card disabled">
+                <span class="c-badge badge-u3">준비중</span>
+                <div class="c-emoji">📊</div>
+                <div class="c-name">자기 관리 대시보드</div>
+                <div class="c-desc">종합 자기 관리 점검</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- /tab-content -->
+
+<!-- ===== Footer ===== -->
+<div class="footer">
+    <div>© 2026 이오북스 · 이오미디어</div>
+    <div class="notice">본 콘텐츠는 교육 목적으로 제작되었습니다.</div>
+</div>
+
+<script>
+function switchTab(n) {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelector('.tab-btn[data-unit="' + n + '"]').classList.add('active');
+    document.getElementById('panel-' + n).classList.add('active');
+}
+function showBooks() { document.getElementById('bookPopup').classList.add('show'); }
+function showGuide() { document.getElementById('guidePopup').classList.add('show'); }
+function showQR() { document.getElementById('qrPopup').classList.add('show'); }
+</script>
+</body>
+</html>

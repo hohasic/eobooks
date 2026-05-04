@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>직업 적성 검사</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="/d_contents/01/common/common-entry.css">
+<style>
+/* 활동 고유 변수 */
+:root {
+  --bg: #eef2fb;--card: #ffffff;--card-hover: #f5f7fe;
+  --accent: #4361ee;--accent-dim: rgba(67,97,238,0.12);
+  --accent2: #3b82f6;--accent3: #FF6B6B;--accent4: #f59e0b;--accent5: #C084FC;
+  --text: #1a1a2e;--text-dim: #64748b;--border: #dde3f0;
+}
+
+/* === 문항 묶음 카드 (헤더 포함) === */
+.q-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.area-header{text-align:center;padding:28px 20px 22px}
+.area-emoji{font-size:52px;line-height:1}
+.area-title{font-family:'Jua',cursive;font-size:26px;color:var(--accent);margin-top:12px}
+.q-item{padding:22px 24px}
+.q-item+.q-item{border-top:none;padding-top:0}
+.q-text{font-size:15px;font-weight:500;color:var(--text);line-height:1.6;margin-bottom:12px}
+.scale-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:7px}
+.scale-btns{display:flex;gap:6px}
+.scale-btn{flex:1;padding:9px 0;border:1px solid var(--border);border-radius:8px;background:var(--card-hover);font-size:14px;font-weight:700;color:var(--text-dim);cursor:pointer;transition:all .12s;text-align:center;font-family:inherit}
+.scale-btn:hover{border-color:var(--accent);color:var(--accent)}
+.scale-btn.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+
+/* === 진행도 바 — 세로 배치 === */
+#activityScreen .progress-wrap{flex-direction:column;align-items:stretch;gap:10px;margin:24px 0 20px}
+#activityScreen .progress-text{text-align:center;font-size:14px;min-width:unset}
+#activityScreen .progress-bar-bg{height:8px}
+
+/* === 카드 하단 여백 === */
+.q-card{padding-bottom:20px}
+
+/* === 자동 진행 안내 === */
+.area-hint{font-size:12px;color:var(--text-dim);text-align:center;margin-top:18px;opacity:.7}
+.q-error{font-size:12px;color:#ef4444;text-align:center;margin-top:8px;min-height:18px}
+
+/* === 통계 전용 === */
+.radar-legend{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:4px;margin-bottom:10px}
+.radar-legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+.national-rank-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.national-rank-item:last-child{border-bottom:none}
+.national-rank-num{font-size:12px;font-weight:700;color:var(--text-dim);width:24px;text-align:center;flex-shrink:0}
+.national-rank-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.national-rank-bar-wrap{width:90px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0}
+.national-rank-bar{height:100%;border-radius:3px;background:var(--accent);transition:width .4s}
+.national-rank-count{font-size:12px;color:var(--text-dim);width:36px;text-align:right;flex-shrink:0}
+
+/* === 결과 고유 === */
+.chart-container{background:rgba(67,97,238,.04);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 16px 20px;margin-bottom:8px;position:relative;height:420px}
+.result-tags{display:flex;flex-wrap:wrap;gap:6px}
+.result-tag{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;background:rgba(59,130,246,.1);color:var(--accent2);border:1px solid rgba(59,130,246,.2)}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="screen active" id="entryScreen"></div>
+
+  <div id="user-badge">
+    <span id="badge-code"></span><span class="badge-dot">·</span>
+    <span id="badge-school"></span><span class="badge-dot">·</span>
+    <span id="badge-nick"></span>
+  </div>
+
+  <div class="screen" id="activityScreen">
+    <div class="progress-wrap">
+      <div class="progress-text" id="progressText">1 / 11</div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+    </div>
+    <div id="areaContent"></div>
+    <div class="area-hint">세 문항을 모두 선택하면 자동으로 다음 영역으로 넘어갑니다.</div>
+  </div>
+
+  <div class="screen" id="resultScreen">
+    <div class="result-tabs">
+      <button class="result-tab active" data-tab="myResult" onclick="switchResultTab('myResult')">나의 결과</button>
+      <button class="result-tab" data-tab="groupStats" id="groupStatsTab" onclick="switchResultTab('groupStats')">우리 반 통계</button>
+      <button class="result-tab" data-tab="nationalStats" onclick="switchResultTab('nationalStats')">전체 통계</button>
+    </div>
+    <div class="result-content active" id="myResult">
+      <div class="result-card" id="result-card">
+        <div class="result-header"><h2>💡 나의 직업 적성 프로필</h2><div class="result-name" id="resultName"></div></div>
+        <div class="result-section">
+          <div class="result-section-title"><span class="icon">📊</span> 적성 영역별 점수</div>
+          <div class="chart-container"><canvas id="chartAptitude" style="height:380px"></canvas></div>
+          <div class="result-tags" id="aptitudeTags"></div>
+        </div>
+      </div>
+      <div class="bot-comment" id="bot-comment"></div>
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="downloadResult()">📥 이미지 저장</button>
+        <button class="btn btn-secondary" onclick="location.reload()">🔄 다시 하기</button>
+        <button class="btn btn-secondary" onclick="goHome()">🏠 처음으로</button>
+      </div>
+    </div>
+    <div class="result-content" id="groupStats">
+      <div class="result-card">
+        <div class="result-section-title">📊 우리 반 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">참여자 수</span><span class="result-stat-value" id="group-participants">-</span></div>
+        <div class="result-stat-item"><span class="result-stat-label">제출 완료</span><span class="result-stat-value" id="group-submitted">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">🕸 우리 반 평균 vs 나</div>
+        <div class="radar-legend">
+          <span class="radar-legend-dot" style="background:#4361ee"></span>나의 점수
+          <span class="radar-legend-dot" style="background:#f59e0b;margin-left:12px"></span>우리 반 평균
+        </div>
+        <div class="chart-container" style="height:280px;min-height:unset"><canvas id="chartGroupRadar"></canvas></div>
+      </div>
+      <div style="text-align:center;margin-top:12px;"><button class="btn btn-secondary" id="refreshGroupBtn" onclick="loadGroupStats()">새로고침</button></div>
+    </div>
+    <div class="result-content" id="nationalStats">
+      <div class="result-card">
+        <div class="result-section-title">🌍 전체 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">전체 참여자</span><span class="result-stat-value" id="national-participants">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">🏆 전체 적성 순위</div>
+        <div id="national-aptitudes"><div class="empty-state">아직 데이터가 없습니다</div></div>
+      </div>
+      <div style="text-align:center;margin-top:12px;"><button class="btn btn-secondary" id="refreshNationalBtn" onclick="loadNationalStats()">새로고침</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="/d_contents/01/common/common-entry.js"></script>
+<script>
+const APTITUDE_AREAS = [
+  {key:'body',   name:'신체·운동능력', emoji:'🏃'},
+  {key:'hand',   name:'손재능',        emoji:'✋'},
+  {key:'space',  name:'공간지각력',    emoji:'🧊'},
+  {key:'music',  name:'음악능력',      emoji:'🎵'},
+  {key:'creative',name:'창의력',       emoji:'💡'},
+  {key:'lang',   name:'언어능력',      emoji:'📝'},
+  {key:'math',   name:'수리·논리력',   emoji:'🧮'},
+  {key:'self',   name:'자기성찰능력',  emoji:'🪞'},
+  {key:'social', name:'대인관계능력',  emoji:'🤝'},
+  {key:'nature', name:'자연친화력',    emoji:'🌿'},
+  {key:'art',    name:'예술시각능력',  emoji:'🎨'}
+];
+const aptitudeQs = {
+  body:   ['운동이나 신체 활동을 할 때 남들보다 잘하는 편이다.',
+           '오랜 시간 체력을 유지하며 활동할 수 있다.',
+           '새로운 스포츠나 운동 동작을 빠르게 익히는 편이다.'],
+  hand:   ['손으로 정밀한 작업(조립, 공예 등)을 잘하는 편이다.',
+           '도구를 사용하여 무언가를 만드는 데 능숙하다.',
+           '손을 이용한 섬세한 작업을 꾸준히 해도 잘 지치지 않는다.'],
+  space:  ['지도를 보거나 길을 찾는 것을 잘하는 편이다.',
+           '입체적인 구조나 도형을 머릿속으로 그릴 수 있다.',
+           '가구 배치나 공간 구성을 머릿속으로 상상하는 것이 어렵지 않다.'],
+  music:  ['음악을 들으면 리듬이나 멜로디를 금방 파악한다.',
+           '악기를 배우거나 노래하는 것이 수월한 편이다.',
+           '주변 소리에 민감하게 반응하고 음감이 좋다는 말을 듣는다.'],
+  creative:['새로운 아이디어를 떠올리는 것을 즐긴다.',
+           '문제를 기존과 다른 방식으로 해결하려고 한다.',
+           '상상력을 활용하거나 아이디어를 연결하는 활동이 즐겁다.'],
+  lang:   ['글을 읽거나 쓰는 것을 잘하고 좋아한다.',
+           '말로 자신의 생각을 논리적으로 표현할 수 있다.',
+           '새로운 단어나 표현을 빠르게 익히고 활용하는 편이다.'],
+  math:   ['수학 문제나 논리 퍼즐을 잘 푸는 편이다.',
+           '숫자와 데이터를 분석하는 것이 어렵지 않다.',
+           '복잡한 상황을 단계적으로 정리하고 계획하는 것을 잘한다.'],
+  self:   ['나 자신의 감정과 생각을 잘 파악하는 편이다.',
+           '스스로 목표를 세우고 실천하는 습관이 있다.',
+           '내 행동의 원인과 결과를 돌아보며 성찰하는 편이다.'],
+  social: ['다른 사람의 감정을 잘 이해하고 공감하는 편이다.',
+           '새로운 사람을 만나서 대화하는 것이 편하다.',
+           '팀 활동에서 서로 협력하며 이끌어가는 역할을 잘한다.'],
+  nature: ['동식물이나 자연환경에 관심이 많다.',
+           '환경 보호나 생태 활동에 참여하고 싶다.',
+           '야외 활동이나 자연 속에 있을 때 편안함을 느낀다.'],
+  art:    ['색감이나 디자인에 대한 감각이 좋다고 느낀다.',
+           '시각적으로 아름다운 것에 민감하게 반응한다.',
+           '그림, 사진, 영상 등 시각적 표현에 관심이 많다.']
+};
+
+// ── 활동 상태 ──
+var currentAreaIdx = 0;
+var allAnswers = {};       // {body:[null,null,null], hand:[...], ...}
+var myAptScores = {};      // 결과 저장 후 통계 탭에서 재사용
+var groupRadarChart = null;
+
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});document.getElementById(id).classList.add('active');window.scrollTo(0,0)}
+
+function startActivity(){
+  show('activityScreen');
+  currentAreaIdx = 0;
+  APTITUDE_AREAS.forEach(function(a){ allAnswers[a.key] = [null, null, null]; });
+  renderArea(0);
+}
+
+function renderArea(idx){
+  var area = APTITUDE_AREAS[idx];
+  var qs   = aptitudeQs[area.key];
+  var total = APTITUDE_AREAS.length;
+
+  // 진행도
+  document.getElementById('progressFill').style.width = (idx / total * 100) + '%';
+  document.getElementById('progressText').textContent = (idx + 1) + ' / ' + total;
+  // 카드 안에 헤더 + 문항 모두 포함
+  var html = '<div class="q-card">'
+    + '<div class="area-header">'
+    + '<div class="area-emoji">' + area.emoji + '</div>'
+    + '<div class="area-title">' + area.name + '</div>'
+    + '</div>';
+
+  qs.forEach(function(qText, qi){
+    var topPad = qi === 0 ? 'padding-top:0' : 'padding-top:20px';
+    html += '<div class="q-item" style="' + topPad + '">'
+      + '<div class="q-text">' + (qi + 1) + '. ' + qText + '</div>'
+      + '<div class="scale-labels"><span>전혀 아니다.</span><span>매우 그렇다.</span></div>'
+      + '<div class="scale-btns">';
+    for(var v = 1; v <= 5; v++){
+      var sel = allAnswers[area.key][qi] === v ? ' selected' : '';
+      html += '<button class="scale-btn' + sel + '" onclick="selectScale(\'' + area.key + '\',' + qi + ',' + v + ')">' + v + '</button>';
+    }
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  document.getElementById('areaContent').innerHTML = html;
+}
+
+var _areaAdvancing = false;
+function selectScale(areaKey, qi, value){
+  allAnswers[areaKey][qi] = value;
+  // 선택된 버튼 상태 갱신
+  var items = document.querySelectorAll('#areaContent .q-item');
+  if(items[qi]){
+    items[qi].querySelectorAll('.scale-btn').forEach(function(btn, i){
+      btn.classList.toggle('selected', i + 1 === value);
+    });
+  }
+  // 현재 영역 3문항 모두 답했으면 자동 진행 (한 번만)
+  if(allAnswers[areaKey].every(function(v){ return v !== null; })){
+    if(_areaAdvancing) return;
+    _areaAdvancing = true;
+    // 현재 영역의 모든 버튼 잠금
+    document.querySelectorAll('#areaContent .scale-btn').forEach(function(b){
+      b.disabled = true;
+      b.style.pointerEvents = 'none';
+    });
+    var total = APTITUDE_AREAS.length;
+    setTimeout(function(){
+      if(currentAreaIdx < total - 1){
+        currentAreaIdx++;
+        renderArea(currentAreaIdx);
+        _areaAdvancing = false;
+      } else {
+        finishActivity();
+        _areaAdvancing = false;
+      }
+    }, 350);
+  }
+}
+
+function finishActivity(){
+  var aptScores = {};
+  APTITUDE_AREAS.forEach(function(a){
+    aptScores[a.key] = allAnswers[a.key].reduce(function(sum, v){ return sum + (v || 0); }, 0);
+  });
+  myAptScores = aptScores; // 통계 탭에서 재사용
+  show('resultScreen');
+  if(EoEntry.state.mode !== 'group'){ var groupTab = document.getElementById('groupStatsTab'); if(groupTab) groupTab.style.display = 'none'; }
+  showMyResult(aptScores);
+  saveResult(aptScores);
+}
+
+function showMyResult(aptScores){
+  var s=EoEntry.state;
+  document.getElementById('resultName').textContent=(s.nickname||'')+'의 적성 프로필';
+  var aptData=APTITUDE_AREAS.map(function(a){return aptScores[a.key]});
+  var sorted=APTITUDE_AREAS.map(function(a){return{key:a.key,name:a.name,emoji:a.emoji,score:aptScores[a.key]}}).sort(function(a,b){return b.score-a.score});
+
+  new Chart(document.getElementById('chartAptitude'),{
+    type:'bar',
+    data:{
+      labels:APTITUDE_AREAS.map(function(a){return a.name}),
+      datasets:[{
+        data:aptData,
+        backgroundColor:aptData.map(function(v){
+          var s2=aptData.slice().sort(function(a,b){return b-a});
+          if(v>=s2[0])return '#4361ee';if(v>=s2[1])return '#3b82f6';if(v>=s2[2])return '#C084FC';return 'rgba(67,97,238,0.15)';
+        }),
+        borderRadius:6,barThickness:8
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,devicePixelRatio:(window.devicePixelRatio||1)*2,indexAxis:'y',plugins:{legend:{display:false}},
+      layout:{padding:{top:8,bottom:8}},
+      scales:{
+        x:{beginAtZero:true,max:15,ticks:{color:'#64748b',stepSize:3},grid:{color:'rgba(0,0,0,0.07)'}},
+        y:{ticks:{color:'#1a1a2e',font:{size:11,family:'Noto Sans KR'}},grid:{display:false}}
+      }
+    }
+  });
+
+  document.getElementById('aptitudeTags').innerHTML=sorted.slice(0,3).map(function(a){return '<span class="result-tag">'+a.emoji+' '+a.name+' ('+a.score+'점)</span>'}).join('');
+  document.getElementById('bot-comment').innerHTML='<strong>'+s.nickname+'</strong> 님의 가장 뛰어난 적성은 <strong>'+sorted.slice(0,3).map(function(a){return a.name}).join(' · ')+'</strong>이야!<br><br>이 적성들을 살릴 수 있는 직업을 찾아보면 좋겠어. 강점을 아는 것이 진로 탐색의 첫걸음이야! 💡';
+}
+
+async function saveResult(aptScores){
+  try{
+    var sorted=APTITUDE_AREAS.map(function(a){return{key:a.key,score:aptScores[a.key]}}).sort(function(a,b){return b.score-a.score});
+    await fetch(EoEntry.API_BASE+'/result.php?action=submit',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({participant_id:EoEntry.state.participantId,activity_id:'aptitude_check',
+        group_id:EoEntry.state.groupId||null,
+        result_data:{scores:aptScores,top3:sorted.slice(0,3).map(function(a){return a.key}),timestamp:new Date().toISOString()}})});
+  }catch(e){console.error('Save error:',e)}
+}
+async function loadGroupStats(){
+  EoEntry.refreshCooldown('refreshGroupBtn');
+  try{
+    var res=await fetch(EoEntry.API_BASE+'/result.php?action=group&group_id='+EoEntry.state.groupId+'&activity_id=aptitude_check');
+    var data=await res.json();
+    document.getElementById('group-participants').textContent=data.total_participants+'명';
+    document.getElementById('group-submitted').textContent=data.submitted_count+'명';
+
+    // 레이더 차트
+    var avg=data.area_avg_scores||{};
+    var labels=APTITUDE_AREAS.map(function(a){return a.name});
+    var myData=APTITUDE_AREAS.map(function(a){return myAptScores[a.key]||0});
+    var avgData=APTITUDE_AREAS.map(function(a){return avg[a.key]||0});
+
+    if(groupRadarChart){groupRadarChart.destroy();}
+    groupRadarChart=new Chart(document.getElementById('chartGroupRadar'),{
+      type:'radar',
+      data:{
+        labels:labels,
+        datasets:[
+          {label:'나의 점수',data:myData,borderColor:'#4361ee',backgroundColor:'rgba(67,97,238,0.15)',pointBackgroundColor:'#4361ee',pointRadius:3,borderWidth:2},
+          {label:'우리 반 평균',data:avgData,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.1)',pointBackgroundColor:'#f59e0b',pointRadius:3,borderWidth:2}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{r:{min:0,max:15,ticks:{stepSize:3,font:{size:9},color:'#94a3b8',backdropColor:'transparent'},
+          pointLabels:{font:{size:10,family:'Noto Sans KR'},color:'#1a1a2e'},
+          grid:{color:'rgba(0,0,0,0.08)'},angleLines:{color:'rgba(0,0,0,0.08)'}}}
+      }
+    });
+  }catch(e){console.error('Group stats error:',e)}
+}
+
+async function loadNationalStats(){
+  EoEntry.refreshCooldown('refreshNationalBtn');
+  try{
+    var res=await fetch(EoEntry.API_BASE+'/result.php?action=national&activity_id=aptitude_check');
+    var data=await res.json();
+    document.getElementById('national-participants').textContent=data.total_participants+'명';
+
+    var counts=data.area_top1_counts||{};
+    // 순서 유지(PHP에서 이미 정렬됨), 최댓값 구해서 바 비율 계산
+    var orderedKeys=Object.keys(counts);
+    var maxCount=orderedKeys.length>0?counts[orderedKeys[0]]:1;
+    var html='';
+    orderedKeys.forEach(function(key,i){
+      var area=APTITUDE_AREAS.find(function(a){return a.key===key});
+      var cnt=counts[key];
+      var barPct=maxCount>0?Math.round(cnt/maxCount*100):0;
+      var rankStr=i<3?['🥇','🥈','🥉'][i]:(i+1)+'위';
+      html+='<div class="national-rank-item">'
+        +'<span class="national-rank-num">'+rankStr+'</span>'
+        +'<span class="national-rank-name">'+(area?area.emoji+' '+area.name:key)+'</span>'
+        +'<div class="national-rank-bar-wrap"><div class="national-rank-bar" style="width:'+barPct+'%"></div></div>'
+        +'<span class="national-rank-count">'+cnt+'명</span>'
+        +'</div>';
+    });
+    document.getElementById('national-aptitudes').innerHTML=html||'<div class="empty-state">아직 데이터가 없습니다</div>';
+  }catch(e){console.error('National stats error:',e)}
+}
+
+function switchResultTab(tabName){document.querySelectorAll('.result-tab').forEach(function(t){t.classList.remove('active')});document.querySelectorAll('.result-content').forEach(function(c){c.classList.remove('active')});document.querySelector('[data-tab="'+tabName+'"]').classList.add('active');document.getElementById(tabName).classList.add('active')}
+async function downloadResult(){
+  try{
+    var dpr=window.devicePixelRatio||1;
+    var badge=document.getElementById('user-badge');
+    var prevBadge=badge?badge.style.display:'';
+    if(badge) badge.style.display='none';
+    var canvas=await html2canvas(document.getElementById('result-card'),{
+      backgroundColor:'#f5f8ff',scale:dpr*2,useCORS:true,logging:false,
+      scrollX:0,scrollY:-window.scrollY
+    });
+    if(badge) badge.style.display=prevBadge;
+    var link=document.createElement('a');
+    link.download='적성검사_'+EoEntry.state.nickname+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){alert('이미지 저장에 실패했습니다.');}
+}
+function goHome(){var ctx=EoEntry.state.context;if(ctx==='high'){location.href='/d_contents/01/high/'}else if(ctx==='middle'){location.href='/d_contents/01/middle/'}else{location.href='/d_contents/01/middle/'}}
+
+EoEntry.init({activityId:'aptitude_check',title:'💡 직업 적성 검사',subtitle:'11가지 능력 영역에서 나의 강점을 찾아보세요!  (1 = 전혀 아님  ·  5 = 매우 그렇다)',onStart:function(){startActivity()}});
+</script>
+</body>
+</html>

@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>직업 가치관 검사</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<link rel="stylesheet" href="/d_contents/01/common/common-entry.css">
+<style>
+/* ===== 활동 고유 변수 ===== */
+:root{
+  --bg:#eef2fb;--card:#ffffff;--card-hover:#f5f7fe;
+  --accent:#4361ee;--accent-dim:rgba(67,97,238,0.12);
+  --accent2:#3b82f6;--accent3:#FF6B6B;--accent4:#f59e0b;--accent5:#C084FC;
+  --text:#1a1a2e;--text-dim:#64748b;--border:#dde3f0;
+}
+
+/* ===== 프롤로그 ===== */
+.prologue-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px 24px;text-align:center;margin-bottom:20px}
+.prologue-title{font-family:'Jua',cursive;font-size:24px;color:var(--accent);margin-bottom:16px}
+.prologue-text{font-size:15px;line-height:1.7;color:var(--text)}
+.prologue-hint{font-size:13px;color:var(--text-dim);margin-top:14px}
+
+/* ===== 갈림길 카드 ===== */
+.scene-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+.scene-header{padding:24px 22px 8px;text-align:center}
+.scene-badge{display:inline-block;background:var(--accent-dim);color:var(--accent);font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;margin-bottom:10px}
+.scene-title{font-family:'Jua',cursive;font-size:22px;color:var(--text);margin:0}
+.scene-body{padding:8px 22px 24px}
+.scene-text{font-size:15px;line-height:1.8;color:var(--text);text-align:center;padding:4px 0 18px}
+
+/* ===== 선택지 ===== */
+.choice-list{display:flex;flex-direction:column;gap:10px;padding:0 16px 20px}
+.choice-btn{background:#fff;border:2px solid var(--border);border-radius:12px;padding:16px 18px;font-size:14px;line-height:1.5;color:var(--text);cursor:pointer;text-align:left;transition:background .15s,border-color .15s;font-family:inherit;width:100%}
+.choice-btn:hover{background:var(--card-hover);border-color:var(--accent)}
+.choice-btn.selected{background:var(--accent-dim);border-color:var(--accent)}
+.choice-btn:disabled{cursor:not-allowed;opacity:.55}
+.choice-btn.selected:disabled{opacity:1}
+
+/* ===== 결과 — TOP3 카드 목록 ===== */
+.top3-grid{display:flex;flex-direction:column;gap:10px;margin:14px 0 20px}
+.top3-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.top3-card.rank1{border-color:var(--accent4);background:linear-gradient(135deg,rgba(255,215,0,.07),#fff)}
+.top3-card.rank2{border-color:var(--accent2);background:linear-gradient(135deg,rgba(77,166,255,.06),#fff)}
+.top3-card.rank3{border-color:var(--accent5);background:linear-gradient(135deg,rgba(180,77,255,.05),#fff)}
+/* 카드 상단: 이모지(좌) + 메달·이름·태그라인(우) 가로 배치 */
+.top3-header{display:flex;align-items:center;gap:12px}
+.top3-emoji{font-size:34px;line-height:1;flex-shrink:0}
+.top3-title{display:flex;flex-direction:column;gap:2px}
+.top3-medal-name{display:flex;align-items:center;gap:5px}
+.top3-medal{font-size:18px;line-height:1}
+.top3-name{font-family:'Jua',cursive;font-size:18px;color:var(--accent);line-height:1.2}
+.top3-tagline{font-size:12px;color:var(--text-dim);font-style:italic}
+/* 카드 하단 */
+.top3-desc{font-size:12px;line-height:1.55;color:var(--text)}
+.top3-strength{font-size:12px;line-height:1.5;color:var(--text);background:var(--accent-dim);padding:8px 10px;border-radius:8px}
+.top3-strength b{color:var(--accent)}
+.top3-jobs{font-size:11px;line-height:1.5;color:var(--text-dim)}
+.top3-jobs b{color:var(--text);display:block;margin-bottom:2px;font-size:12px}
+
+/* ===== 결과 — 점수 막대 차트 ===== */
+.chart-container{position:relative;height:380px;margin-top:12px}
+.chart-container canvas{display:block}
+
+/* ===== 통계 — 전체 랭킹 바 ===== */
+.rank-list-wrap{display:flex;flex-direction:column;gap:2px;margin-top:8px}
+.rank-bar-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.rank-bar-item:last-child{border-bottom:none}
+.rank-bar-num{font-weight:800;color:var(--accent);min-width:26px;text-align:center;font-size:13px}
+.rank-bar-emoji{font-size:16px}
+.rank-bar-name{flex:1;font-size:13px;font-weight:500}
+.rank-bar-wrap{width:90px;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.rank-bar-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .4s}
+.rank-bar-count{font-size:12px;color:var(--text-dim);min-width:36px;text-align:right}
+
+/* ===== 레이더 레전드 ===== */
+.radar-legend{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:14px;justify-content:center;margin-bottom:6px}
+.radar-legend-row{display:flex;align-items:center;gap:5px}
+.radar-legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="screen active" id="entryScreen"></div>
+  <div id="user-badge"><span id="badge-code"></span><span class="badge-dot">·</span><span id="badge-school"></span><span class="badge-dot">·</span><span id="badge-nick"></span></div>
+
+  <div class="screen" id="activityScreen">
+    <!-- 프롤로그 -->
+    <div id="prologueBox" class="prologue-box">
+      <div class="prologue-title">진로 갈림길</div>
+      <div class="prologue-text" id="prologueText"></div>
+      <div class="prologue-hint">✨ 총 8개의 갈림길 · 예상 소요 5분</div>
+      <button class="btn btn-primary" style="margin-top:18px;" onclick="beginScenes()">시작하기 →</button>
+    </div>
+
+    <!-- 갈림길 진행 (처음엔 숨김) -->
+    <div id="sceneArea" style="display:none">
+      <div class="progress-wrap">
+        <div class="progress-text" id="progressText">1 / 8</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+      </div>
+      <div id="sceneRender"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="resultScreen">
+    <div class="result-tabs">
+      <button class="result-tab active" data-tab="myResult" onclick="switchResultTab('myResult')">나의 결과</button>
+      <button class="result-tab" data-tab="groupStats" id="groupStatsTab" onclick="switchResultTab('groupStats')">우리 반 통계</button>
+      <button class="result-tab" data-tab="nationalStats" onclick="switchResultTab('nationalStats')">전체 통계</button>
+    </div>
+
+    <!-- 나의 결과 -->
+    <div class="result-content active" id="myResult">
+      <div class="result-card" id="result-card">
+        <div class="result-header"><h2>❤️ 나의 직업 가치관</h2><div class="result-name" id="resultName"></div></div>
+        <div class="result-section">
+          <div class="result-section-title"><span class="icon">🏆</span> 나의 TOP 가치</div>
+          <div class="top3-grid" id="top3Grid"></div>
+        </div>
+        <div class="result-section">
+          <div class="result-section-title"><span class="icon">📊</span> 12가지 가치관 점수</div>
+          <div class="chart-container"><canvas id="chartMyScores" style="height:380px;"></canvas></div>
+        </div>
+      </div>
+      <div class="bot-comment" id="bot-comment"></div>
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="downloadResult()">📥 이미지 저장</button>
+        <button class="btn btn-secondary" onclick="location.reload()">🔄 다시 하기</button>
+        <button class="btn btn-secondary" onclick="goHome()">🏠 처음으로</button>
+      </div>
+    </div>
+
+    <!-- 우리 반 통계 -->
+    <div class="result-content" id="groupStats">
+      <div class="result-card">
+        <div class="result-section-title">📊 우리 반 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">참여자 수</span><span class="result-stat-value" id="group-participants">-</span></div>
+        <div class="result-stat-item"><span class="result-stat-label">제출 완료</span><span class="result-stat-value" id="group-submitted">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">🎯 우리 반 평균 vs 나의 점수</div>
+        <div class="radar-legend">
+          <div class="radar-legend-row"><span class="radar-legend-dot" style="background:#4361ee"></span>나의 점수</div>
+          <div class="radar-legend-row"><span class="radar-legend-dot" style="background:#f59e0b"></span>우리 반 평균</div>
+        </div>
+        <div class="chart-container" style="height:360px;"><canvas id="chartGroupRadar" style="height:340px;"></canvas></div>
+      </div>
+      <div style="text-align:center;margin-top:12px;"><button class="btn btn-secondary" id="refreshGroupBtn" onclick="loadGroupStats()">새로고침</button></div>
+    </div>
+
+    <!-- 전체 통계 -->
+    <div class="result-content" id="nationalStats">
+      <div class="result-card">
+        <div class="result-section-title">🌍 전체 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">전체 참여자</span><span class="result-stat-value" id="national-participants">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">🏆 가장 많이 1위로 선택된 가치관</div>
+        <div class="rank-list-wrap" id="nationalRankList"><div class="empty-state">아직 데이터가 없습니다</div></div>
+      </div>
+      <div style="text-align:center;margin-top:12px;"><button class="btn btn-secondary" id="refreshNationalBtn" onclick="loadNationalStats()">새로고침</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="/d_contents/01/common/common-entry.js"></script>
+<script>
+/* =========================================================
+ * 가치관 12개 — 결과 카드용 전체 데이터
+ * ========================================================= */
+const VALUES = [
+  {key:'stability',name:'안정성',emoji:'🛡️',tagline:'흔들리지 않는 일상의 평온',
+   description:'갑작스러운 변화보다 예측 가능한 하루를 더 편하게 느끼는 사람입니다. 오래 뿌리내려 일할 수 있는 환경에서 진짜 실력이 발휘되며, 검증된 방식을 꾸준히 다듬어 가는 데 힘을 씁니다.',
+   strength:'꾸준함과 책임감으로 맡은 자리를 오래 지킵니다.',
+   jobs:['공무원','교사','공공기관 직원','은행원','항공 관제사']},
+  {key:'salary',name:'보수',emoji:'💰',tagline:'노력에 걸맞은 정당한 보상',
+   description:'내가 쏟은 시간과 능력이 숫자로 정확히 돌아오길 바라는 사람입니다. 수입은 단순한 돈이 아니라 삶의 선택지를 넓히고 미래를 설계할 수 있는 자유의 재료라고 생각합니다.',
+   strength:'목표를 숫자로 세우고 끝까지 끌고 가는 힘이 있습니다.',
+   jobs:['투자 분석가','영업 전문가','의사','변호사','부동산 개발자']},
+  {key:'balance',name:'일과 삶의 균형',emoji:'⚖️',tagline:'일 밖의 시간도 나의 인생',
+   description:'일에 모든 것을 쏟기보다 가족·취미·나 자신을 위한 시간을 함께 지키려는 사람입니다. 오래 지치지 않고 건강하게 일하는 것이 결국 더 좋은 결과로 돌아온다고 믿습니다.',
+   strength:'일정을 관리하며 장기적으로 꾸준한 성과를 냅니다.',
+   jobs:['공공기관 직원','프리랜서 디자이너','치과위생사','도서관 사서','약사']},
+  {key:'joy',name:'즐거움',emoji:'✨',tagline:'출근길에 콧노래가 나오는 일',
+   description:'일 자체가 재미있어야 한다고 믿는 사람입니다. 몰입의 순간, 좋아하는 것을 탐구하는 시간이 곧 하루의 의미가 되며, 좋아하지 않는 일에서는 능률이 크게 떨어지는 편입니다.',
+   strength:'좋아하는 일에 깊이 빠져드는 집중력과 창의성이 뛰어납니다.',
+   jobs:['게임 기획자','요리사','일러스트레이터','배우','뮤지션']},
+  {key:'belong',name:'소속감',emoji:'🤝',tagline:'혼자보다 함께의 온도',
+   description:'동료와 팀의 온기가 일의 만족감에 큰 영향을 미치는 사람입니다. 같은 목표를 향해 어깨를 맞대고 나아가는 감각, 서로를 아는 사이에서 일할 때 가장 나답다고 느낍니다.',
+   strength:'팀워크를 만들고 분위기를 따뜻하게 이끄는 힘이 있습니다.',
+   jobs:['스포츠 감독','사회복지사','인사 담당자','간호사','학교 상담교사']},
+  {key:'growth',name:'자기계발',emoji:'🌱',tagline:'어제보다 한 걸음 더',
+   description:'새로운 지식과 기술을 익히는 것 자체에서 보람을 느끼는 사람입니다. 한 자리에 머무르기보다 계속 확장하고 깊어지는 삶을 원하며, 배우지 않는 시간이 길어지면 답답함을 느낍니다.',
+   strength:'빠르게 배우고 흡수하며 낯선 분야에도 겁 없이 뛰어듭니다.',
+   jobs:['연구원','대학 교수','소프트웨어 개발자','의사','데이터 사이언티스트']},
+  {key:'achieve',name:'성취',emoji:'🏆',tagline:'눈에 보이는 결과물의 힘',
+   description:'목표를 세우고 끝내는 데서 진짜 에너지를 얻는 사람입니다. 완성된 결과물·숫자·기록이 곧 자신의 삶을 증명한다고 생각하며, 중도에 흐지부지되는 것을 가장 견디기 힘들어합니다.',
+   strength:'목표 지향적이고 마감을 지키며 끈질기게 끝까지 갑니다.',
+   jobs:['운동선수','외과의사','프로젝트 매니저','스타트업 창업가','건축가']},
+  {key:'autonomy',name:'자율성',emoji:'🕊️',tagline:'나의 속도, 나의 방식',
+   description:'남의 지시보다 스스로 정한 방식대로 움직일 때 힘이 나는 사람입니다. 간섭이 적고 선택과 책임을 온전히 쥘 수 있는 환경에서 실력이 꽃피며, 빡빡한 통제 아래서는 답답함을 크게 느낍니다.',
+   strength:'스스로 계획하고 추진하는 독립적 실행력이 뛰어납니다.',
+   jobs:['프리랜서 작가','유튜버·크리에이터','자영업자','예술가','1인 기업가']},
+  {key:'challenge',name:'도전',emoji:'🔥',tagline:'낯선 길이 오히려 설레는 사람',
+   description:'안정보다 불확실성에서 더 큰 에너지를 얻는 사람입니다. 아무도 가본 적 없는 문제나 어려운 과제 앞에서 오히려 눈이 반짝이며, 같은 일을 오래 반복하면 금세 지루함을 느낍니다.',
+   strength:'위기 상황에서도 침착하고 새로운 해법을 빠르게 찾습니다.',
+   jobs:['스타트업 창업가','극지 연구자','소방관·구조대원','탐험가','전장 기자']},
+  {key:'influence',name:'영향력',emoji:'📣',tagline:'내 일이 세상을 움직이는 힘',
+   description:'내가 한 일이 다른 사람과 세상을 조금이라도 움직이길 바라는 사람입니다. 작은 개선이든 큰 변화든, 나의 선택이 파문을 일으키는 모습을 볼 때 가장 큰 의미를 느낍니다.',
+   strength:'사람들의 마음을 움직이고 방향을 제시하는 리더십이 있습니다.',
+   jobs:['정치인','기자','교사','기업 CEO','정책 입안자']},
+  {key:'contribution',name:'사회 기여',emoji:'🌍',tagline:'나를 넘어선 쓸모의 기쁨',
+   description:'누군가의 어려움을 덜어주고 공동체에 도움이 되는 일에서 가장 큰 보람을 느끼는 사람입니다. 돈이나 명예보다 \'내 일이 세상에 쓸모 있는가\'라는 질문이 더 중요한 기준이 됩니다.',
+   strength:'공감 능력이 뛰어나고 타인을 배려하는 책임감이 깊습니다.',
+   jobs:['사회복지사','의료진','비영리단체 활동가','환경 전문가','인권 변호사']},
+  {key:'recognition',name:'사회적 인정',emoji:'🌟',tagline:'내 이름이 세상에 남는 기쁨',
+   description:'자신의 실력과 성과가 세상에 드러나고 제대로 평가받는 것을 중요하게 여기는 사람입니다. 이름이 기록되고 인용되고 기억되는 것이 일의 원동력이 되며, 묵묵히 묻히는 삶에는 덜 끌립니다.',
+   strength:'높은 기준을 향해 노력하며 자신의 분야에서 최고를 추구합니다.',
+   jobs:['배우','프로 운동선수','브랜드 CEO','학계 권위자','수상 경력 셰프']}
+];
+
+const VALUE_KEYS = VALUES.map(function(v){return v.key;});
+const VALUE_MAP = {}; VALUES.forEach(function(v){VALUE_MAP[v.key]=v;});
+
+/* =========================================================
+ * 시나리오 8개 — 진로 갈림길
+ * ========================================================= */
+const PROLOGUE = "지금부터 미래의 \'나\'가 되어 8개의 갈림길에서 선택을 해보자. 정답은 없다. 나의 선택이 쌓여 \'나의 직업 가치관\'이 된다.";
+
+const SCENES = [
+  {id:1,title:'운명의 메일함',
+   scene:'대학 졸업을 앞둔 어느 날, 나에게 세 통의 제안서가 도착했다. 한 번의 클릭으로 나의 첫 출발지가 결정되는 순간이다. 나라는 사람의 첫 페이지를 장식할 곳은 어디일까?',
+   choices:[
+     {text:'선례가 전혀 없는 낯선 분야의 개척지로 뛰어든다',weights:{challenge:3,growth:2}},
+     {text:'정해진 날짜에 어김없이 두둑한 보상이 입금되는 삶',weights:{stability:3,salary:2}},
+     {text:'출근길에 콧노래가 나올 만큼 내 흥미를 끄는 곳',weights:{joy:3,autonomy:2}}
+   ]},
+  {id:2,title:'사무실의 첫 공기',
+   scene:'첫 직장에 들어간 지 어느덧 1년, 낯선 사무실 풍경도 이제는 일상이 되었다. 본격적으로 업무에 적응하기 시작한 지금, 나는 이곳에서 어떤 모습으로 존재하고 싶을까?',
+   choices:[
+     {text:'생일마다 케이크를 사 들고 퇴근하는 팀원들의 모습',weights:{belong:3,recognition:2}},
+     {text:'내 성과가 조직 전체의 흐름을 바꾸는 것을 확인한다',weights:{achieve:3,influence:2}},
+     {text:'출퇴근 시간도 업무 순서도 내가 직접 짜는 하루',weights:{autonomy:3,joy:2}}
+   ]},
+  {id:3,title:'폭풍 전야의 마감',
+   scene:'일에 완벽히 익숙해질 무렵, 감당하기 힘든 프로젝트 마감이 코앞으로 다가왔다. 예상치 못한 오류가 터져 모두가 지친 표정으로 시계를 쳐다본다. 나는 오늘 밤 어떤 결정을 내릴까?',
+   choices:[
+     {text:'한계를 뛰어넘는 완벽한 결과물을 위해 밤을 지새운다',weights:{achieve:3,challenge:2}},
+     {text:'퇴근 후의 온전한 휴식을 지키며 내일을 준비한다',weights:{balance:3,stability:2}},
+     {text:'조금 더 고생하더라도 뒤처진 동료의 손을 잡는다',weights:{contribution:3,belong:2}}
+   ]},
+  {id:4,title:'거부하기 힘든 제안',
+   scene:'이 분야에 몸담은 지 어느덧 4~5년, 뜻밖의 인물이 은밀한 제안을 건네왔다. 지금과는 전혀 다른 환경과 조건이 나를 흔들어 놓는다. 내가 가장 거절하기 힘든 제안은 무엇일까?',
+   choices:[
+     {text:'수백 명의 카메라가 나를 향하는 무대의 중앙에 선다',weights:{influence:3,recognition:2}},
+     {text:'완전히 새로운 기술을 익혀야 하는 험난한 부서로 이동',weights:{growth:3,challenge:2}},
+     {text:'통장 잔고가 크게 불어나는 파격적인 대우를 택한다',weights:{salary:3,balance:2}}
+   ]},
+  {id:5,title:'리더라는 이름의 무게',
+   scene:'드디어 팀을 이끄는 리더가 되어 회의실 상석에 앉은 날이다. 팀원들의 시선이 나를 향하고, 나는 팀의 운영 철학을 결정해야 한다. 내가 가장 중요하게 생각하는 조직의 모습은 무엇일까?',
+   choices:[
+     {text:'각자의 책상 앞에 간섭이 전혀 닿지 않는 팀의 풍경',weights:{autonomy:3,joy:2}},
+     {text:'누구 하나 낙오되지 않는 견고하고 안전한 팀을 만든다',weights:{belong:3,stability:2}},
+     {text:'우리 팀의 일로 세상의 불편함을 해결하는 데 집중한다',weights:{contribution:3,influence:2}}
+   ]},
+  {id:6,title:'10년의 궤적',
+   scene:'10년 차 선배가 되어 맞이한 주말 오후, 나는 지난 세월을 되짚어본다. 치열했던 시간들이 쌓여 나라는 사람을 정의하고 있다. 지금의 나를 만든 가장 만족스러운 결과는 무엇일까?',
+   choices:[
+     {text:'신입들이 교재 첫 페이지에서 만나게 되는 나의 이름',weights:{recognition:3,achieve:2}},
+     {text:'사회적 약자의 삶을 실질적으로 개선한 커리어의 흔적',weights:{influence:3,contribution:2}},
+     {text:'매일의 업무에서 소소한 행복을 느끼며 평온하게 산 것',weights:{joy:3,balance:2}}
+   ]},
+  {id:7,title:'거대한 변화의 파도',
+   scene:'산업 전체를 뒤흔드는 거대한 변화의 파도가 몰아치는 시기다. 익숙했던 방식이 더 이상 통하지 않는 대혼란 속에서, 나는 어떤 생존 전략으로 미래를 대비하게 될까?',
+   choices:[
+     {text:'보상이 확실하고 안전한 자산이 보장되는 곳으로 후퇴',weights:{salary:3,stability:2}},
+     {text:'불확실성 속에서도 새로운 지식을 습득해 나를 증명한다',weights:{growth:3,achieve:2}},
+     {text:'정해진 틀을 깨고 나만의 방식으로 정면 돌파한다',weights:{challenge:3,autonomy:2}}
+   ]},
+  {id:8,title:'노을 지는 창가에서',
+   scene:'다시 10년이 흘러 은퇴를 앞둔 조용한 오후다. 창가에 앉아 일기장을 덮으며, 내가 일궈온 인생의 마무리를 상상해 본다. 내가 가장 흐뭇하게 미소 지을 수 있는 나의 모습은 무엇일까?',
+   choices:[
+     {text:'저녁은 가족과, 주말은 이웃과 함께 나눈 시간들',weights:{balance:3,contribution:2}},
+     {text:'거실 한 벽이 감사패로 채워진 대저택에서 맞는 노후',weights:{recognition:3,salary:2}},
+     {text:'평생 새 분야를 배우며, 함께 공부하는 동료들 속에 남은 나',weights:{growth:3,belong:2}}
+   ]}
+];
+
+/* =========================================================
+ * 상태 관리
+ * ========================================================= */
+let currentSceneIdx = 0;
+let selections = new Array(SCENES.length).fill(null); // 각 장면별 선택된 choiceIdx
+let myScores = {};  // {stability:10, salary:8, ...}
+let myTop3 = [];    // ['growth','joy','challenge']
+let myScoresChart = null;
+let groupRadarChart = null;
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* =========================================================
+ * 프롤로그 → 갈림길 진행
+ * ========================================================= */
+function startActivity(){
+  show('activityScreen');
+  document.getElementById('prologueText').textContent = PROLOGUE;
+  document.getElementById('prologueBox').style.display = 'block';
+  document.getElementById('sceneArea').style.display = 'none';
+  currentSceneIdx = 0;
+  selections = new Array(SCENES.length).fill(null);
+}
+
+function beginScenes(){
+  document.getElementById('prologueBox').style.display = 'none';
+  document.getElementById('sceneArea').style.display = 'block';
+  renderScene(0);
+}
+
+function renderScene(idx){
+  currentSceneIdx = idx;
+  var scene = SCENES[idx];
+  var total = SCENES.length;
+
+  // 진행도
+  document.getElementById('progressText').textContent = (idx+1) + ' / ' + total;
+  document.getElementById('progressFill').style.width = (((idx+1)/total)*100) + '%';
+
+  var selIdx = selections[idx];
+  var html = '<div class="scene-card">'
+    + '<div class="scene-header">'
+    + '<div class="scene-badge">갈림길 ' + (idx+1) + ' / ' + total + '</div>'
+    + '<h3 class="scene-title">' + scene.title + '</h3>'
+    + '</div>'
+    + '<div class="scene-body"><div class="scene-text">' + scene.scene + '</div></div>'
+    + '<div class="choice-list">';
+
+  scene.choices.forEach(function(c, ci){
+    var sel = selIdx === ci ? ' selected' : '';
+    html += '<button class="choice-btn' + sel + '" onclick="selectChoice(' + idx + ',' + ci + ')">'
+      + c.text + '</button>';
+  });
+
+  html += '</div></div>';
+  document.getElementById('sceneRender').innerHTML = html;
+  window.scrollTo(0,0);
+}
+
+function selectChoice(sceneIdx, choiceIdx){
+  // 이미 선택 처리 중이면 무시
+  var buttons = document.querySelectorAll('#sceneRender .choice-btn');
+  if(buttons.length && buttons[0].disabled) return;
+
+  selections[sceneIdx] = choiceIdx;
+
+  // 시각 피드백 — 선택된 것만 하이라이트, 나머지 비활성
+  buttons.forEach(function(b, bi){
+    b.classList.remove('selected');
+    if(bi === choiceIdx) b.classList.add('selected');
+    b.disabled = true;
+  });
+
+  // 0.5초 후 자동 진행
+  setTimeout(function(){
+    if(sceneIdx < SCENES.length - 1){
+      renderScene(sceneIdx + 1);
+    } else {
+      finishActivity();
+    }
+  }, 500);
+}
+
+/* =========================================================
+ * 점수 계산 & 결과
+ * ========================================================= */
+function calculateScores(){
+  var scores = {};
+  VALUE_KEYS.forEach(function(k){scores[k]=0;});
+  selections.forEach(function(choiceIdx, sceneIdx){
+    if(choiceIdx === null) return;
+    var w = SCENES[sceneIdx].choices[choiceIdx].weights;
+    Object.keys(w).forEach(function(k){
+      scores[k] = (scores[k]||0) + w[k];
+    });
+  });
+  return scores;
+}
+
+function finishActivity(){
+  myScores = calculateScores();
+  // TOP3 계산 (동점 시 VALUES 배열 순서로)
+  var sorted = VALUE_KEYS.slice().sort(function(a,b){
+    if(myScores[b] !== myScores[a]) return myScores[b] - myScores[a];
+    return VALUE_KEYS.indexOf(a) - VALUE_KEYS.indexOf(b);
+  });
+  myTop3 = sorted.slice(0,3);
+
+  show('resultScreen');
+  if(EoEntry.state.mode !== 'group'){
+    var groupTab = document.getElementById('groupStatsTab');
+    if(groupTab) groupTab.style.display = 'none';
+  }
+  showMyResult();
+  saveResult();
+}
+
+function showMyResult(){
+  var s = EoEntry.state;
+  document.getElementById('resultName').textContent = (s.nickname || '') + '의 직업 가치관';
+
+  // TOP3 카드 (1~3위, 이모지 좌측 + 메달·이름·태그라인 우측 가로 배치)
+  var medals = ['🥇','🥈','🥉'];
+  var rankCls = ['rank1','rank2','rank3'];
+  var gridHtml = '';
+  myTop3.forEach(function(key, i){
+    var v = VALUE_MAP[key];
+    gridHtml += '<div class="top3-card ' + rankCls[i] + '">'
+      + '<div class="top3-header">'
+      +   '<div class="top3-emoji">' + v.emoji + '</div>'
+      +   '<div class="top3-title">'
+      +     '<div class="top3-medal-name"><span class="top3-medal">' + medals[i] + '</span><span class="top3-name">' + v.name + '</span></div>'
+      +     '<div class="top3-tagline">' + v.tagline + '</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="top3-desc">' + v.description + '</div>'
+      + '<div class="top3-strength"><b>나의 강점 · </b>' + v.strength + '</div>'
+      + '<div class="top3-jobs"><b>어울리는 직업</b>' + v.jobs.join(' · ') + '</div>'
+      + '</div>';
+  });
+  document.getElementById('top3Grid').innerHTML = gridHtml;
+
+  // 12가치관 막대 차트
+  renderMyScoresChart();
+
+  // 멘트
+  var top3Names = myTop3.map(function(k){return VALUE_MAP[k].name;});
+  document.getElementById('bot-comment').innerHTML =
+    '<strong>' + s.nickname + '</strong> 님이 중요하게 생각하는 직업 가치는 <strong>'
+    + top3Names.join(' · ') + '</strong>이야!<br><br>'
+    + '직업을 선택할 때 이 가치들이 얼마나 충족되는지 꼭 확인해 봐! 💪';
+}
+
+function renderMyScoresChart(){
+  if(myScoresChart){myScoresChart.destroy();}
+  // 점수 내림차순 정렬
+  var sorted = VALUE_KEYS.slice().sort(function(a,b){return myScores[b]-myScores[a];});
+  var labels = sorted.map(function(k){return VALUE_MAP[k].emoji + ' ' + VALUE_MAP[k].name;});
+  var data = sorted.map(function(k){return myScores[k];});
+  var bgColors = sorted.map(function(k,i){
+    if(i===0) return '#f59e0b';
+    if(i===1) return '#3b82f6';
+    if(i===2) return '#C084FC';
+    return '#94a3b8';
+  });
+
+  myScoresChart = new Chart(document.getElementById('chartMyScores'), {
+    type:'bar',
+    data:{labels:labels, datasets:[{label:'점수', data:data, backgroundColor:bgColors, borderWidth:0, barThickness:10}]},
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:false,
+      devicePixelRatio: (window.devicePixelRatio || 1) * 2,
+      layout:{padding:{right:36}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:function(c){return c.parsed.x + '점';}}},
+        datalabels:{
+          anchor:'end',
+          align:'end',
+          formatter:function(value){return value + '점';},
+          font:{size:11, weight:'500'},
+          color:'#64748b'
+        }
+      },
+      scales:{
+        x:{beginAtZero:true, max:15, ticks:{stepSize:3, font:{size:11}}, grid:{color:'rgba(0,0,0,0.05)'}},
+        y:{ticks:{font:{size:12}, autoSkip:false}, grid:{display:false}}
+      }
+    }
+  });
+}
+
+/* =========================================================
+ * 결과 저장 & 통계 로드
+ * ========================================================= */
+async function saveResult(){
+  try{
+    await fetch(EoEntry.API_BASE + '/result.php?action=submit', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        participant_id: EoEntry.state.participantId,
+        activity_id:'work_values',
+        group_id: EoEntry.state.groupId || null,
+        result_data:{
+          scores: myScores,
+          top3: myTop3,
+          selections: selections,
+          context: EoEntry.state.context || null,
+          timestamp: new Date().toISOString()
+        }
+      })
+    });
+  }catch(e){console.error('Save error:', e);}
+}
+
+async function loadGroupStats(){
+  EoEntry.refreshCooldown('refreshGroupBtn');
+  try{
+    var res = await fetch(EoEntry.API_BASE + '/result.php?action=group&group_id='
+      + EoEntry.state.groupId + '&activity_id=work_values');
+    var data = await res.json();
+    document.getElementById('group-participants').textContent = (data.total_participants||0) + '명';
+    document.getElementById('group-submitted').textContent = (data.submitted_count||0) + '명';
+    renderGroupRadarChart(data.value_avg_scores || {});
+  }catch(e){console.error('Group stats error:', e);}
+}
+
+function renderGroupRadarChart(avgScores){
+  if(groupRadarChart){groupRadarChart.destroy();}
+  var labels = VALUE_KEYS.map(function(k){return VALUE_MAP[k].name;});
+  var myData = VALUE_KEYS.map(function(k){return myScores[k]||0;});
+  var avgData = VALUE_KEYS.map(function(k){return avgScores[k]||0;});
+
+  groupRadarChart = new Chart(document.getElementById('chartGroupRadar'), {
+    type:'radar',
+    data:{labels:labels, datasets:[
+      {label:'나의 점수', data:myData, borderColor:'#4361ee', backgroundColor:'rgba(67,97,238,0.15)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#4361ee'},
+      {label:'우리 반 평균', data:avgData, borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.10)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#f59e0b'}
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{r:{
+        min:0, max:12,
+        ticks:{stepSize:3, display:false},
+        pointLabels:{font:{size:10}},
+        grid:{color:'rgba(0,0,0,0.08)'},
+        angleLines:{color:'rgba(0,0,0,0.08)'}
+      }}
+    }
+  });
+}
+
+async function loadNationalStats(){
+  EoEntry.refreshCooldown('refreshNationalBtn');
+  try{
+    var res = await fetch(EoEntry.API_BASE + '/result.php?action=national&activity_id=work_values');
+    var data = await res.json();
+    document.getElementById('national-participants').textContent = (data.total_participants||0) + '명';
+    renderNationalRankList(data.value_top1_counts || {});
+  }catch(e){console.error('National stats error:', e);}
+}
+
+function renderNationalRankList(top1Counts){
+  var entries = Object.keys(top1Counts).map(function(k){return {key:k, count:top1Counts[k]||0};});
+  entries.sort(function(a,b){return b.count - a.count;});
+  var total = entries.reduce(function(s,e){return s+e.count;},0);
+
+  if(total === 0){
+    document.getElementById('nationalRankList').innerHTML = '<div class="empty-state">아직 데이터가 없습니다</div>';
+    return;
+  }
+
+  var maxCount = entries[0].count;
+  var html = '';
+  entries.forEach(function(e, i){
+    var v = VALUE_MAP[e.key];
+    if(!v) return;
+    var pct = maxCount > 0 ? Math.round((e.count/maxCount)*100) : 0;
+    html += '<div class="rank-bar-item">'
+      + '<span class="rank-bar-num">' + (i+1) + '</span>'
+      + '<span class="rank-bar-emoji">' + v.emoji + '</span>'
+      + '<span class="rank-bar-name">' + v.name + '</span>'
+      + '<span class="rank-bar-wrap"><span class="rank-bar-fill" style="width:' + pct + '%"></span></span>'
+      + '<span class="rank-bar-count">' + e.count + '명</span>'
+      + '</div>';
+  });
+  document.getElementById('nationalRankList').innerHTML = html;
+}
+
+/* =========================================================
+ * 결과 탭 전환 / 이미지 저장 / 홈 이동
+ * ========================================================= */
+function switchResultTab(tabName){
+  document.querySelectorAll('.result-tab').forEach(function(t){t.classList.remove('active')});
+  document.querySelectorAll('.result-content').forEach(function(c){c.classList.remove('active')});
+  document.querySelector('[data-tab="'+tabName+'"]').classList.add('active');
+  document.getElementById(tabName).classList.add('active');
+  if(tabName === 'groupStats') loadGroupStats();
+  if(tabName === 'nationalStats') loadNationalStats();
+}
+
+async function downloadResult(){
+  try{
+    var dpr = window.devicePixelRatio || 1;
+    var badge = document.getElementById('user-badge');
+    var prevBadge = badge ? badge.style.display : '';
+    if(badge) badge.style.display = 'none';
+    var canvas = await html2canvas(document.getElementById('result-card'), {
+      backgroundColor:'#f5f8ff', scale: dpr * 2, useCORS:true, logging:false,
+      scrollX:0, scrollY:-window.scrollY
+    });
+    if(badge) badge.style.display = prevBadge;
+    var link = document.createElement('a');
+    link.download = '가치관_' + EoEntry.state.nickname + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){alert('이미지 저장에 실패했습니다.');}
+}
+
+function goHome(){
+  var ctx = EoEntry.state.context;
+  if(ctx === 'high'){location.href='/d_contents/01/high/';}
+  else if(ctx === 'middle'){location.href='/d_contents/01/middle/';}
+  else{location.href='/d_contents/01/middle/';}
+}
+
+/* =========================================================
+ * 초기화
+ * ========================================================= */
+Chart.register(ChartDataLabels);
+
+EoEntry.init({
+  activityId:'work_values',
+  title:'❤️ 직업 가치관 검사',
+  subtitle:'진로 갈림길 8개에서 나의 선택을 따라가 봐!',
+  onStart: function(){ startActivity(); }
+});
+</script>
+</body>
+</html>

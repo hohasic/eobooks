@@ -1,0 +1,638 @@
+/* ============================================================
+   EoBooks Digital Contents — Common Entry & Result Styles
+   공통 스타일: 초기화면, 세션 뱃지, 결과 3탭, 버튼, 유틸리티
+   수정 시 전 활동에 일괄 반영됩니다.
+
+   [v3.2] 2026-04-14
+   - 라이트 테마로 전환 (다크 → 화이트/블루)
+   - 네온 그린 → 블루 포인트 컬러
+   - input, btn border-radius 확대 (부드러운 느낌)
+
+   [v3.1] 2026-04-12
+   - 폰트(@import Jua) 자동 로드 추가
+   - 활동 파일에서 반복되던 공유 스타일 흡수
+     (body::before, #user-badge, progress, mascot, action-buttons 등)
+   - CSS 변수 별칭 추가 (--accent, --card 등)
+   - 활동 파일에서 .container/.screen/.btn 등을 재선언할 필요 없음
+   ============================================================ */
+
+/* === Font Import (전 활동 공통) === */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Jua&display=swap');
+
+/* === CSS Variables === */
+:root {
+    --bg: #eef2fb;
+    --neon: #4361ee;
+    --neon-dark: #3451c7;
+    --neon-glow: rgba(67, 97, 238, 0.25);
+    --text: #1a1a2e;
+    --text-light: #64748b;
+    --border: #dde3f0;
+
+    /* 활동 파일 호환 별칭 — 활동별 :root에서 재정의 가능 */
+    --accent: #4361ee;
+    --accent-dim: rgba(67, 97, 238, 0.1);
+    --card: #ffffff;
+    --card-hover: #f5f7fe;
+    --text-dim: #64748b;
+    --radius: 16px;
+    --radius-sm: 10px;
+}
+
+/* === Reset & Base === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* 배경 그라데이션 효과 (전 활동 공통) */
+body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(67, 97, 238, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(99, 179, 237, 0.06) 0%, transparent 50%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+}
+
+/* === Screen Management === */
+.screen {
+    display: none;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.screen.active {
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* === Session Badge (클래스 기반 — common-entry.js용) === */
+.session-badge {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.session-badge-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.session-badge-center {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-light);
+    font-size: 12px;
+}
+
+.session-badge-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-light);
+}
+
+/* === Activity Badge (ID 기반 — 활동 파일의 showBadge()용) === */
+#user-badge {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+#badge-code { color: var(--accent); }
+#badge-school { color: var(--text); }
+#badge-nick { color: var(--text); }
+.badge-dot { color: var(--border); }
+
+/* === Entry Screen === */
+#entryScreen {
+    gap: 24px;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+/* container 래퍼가 있는 활동 — 이중 min-height 방지 */
+.container #entryScreen {
+    min-height: 0;
+    flex: 1;
+}
+
+.entry-header {
+    text-align: center;
+}
+
+.entry-title {
+    font-family: 'Jua', cursive;
+    font-size: 32px;
+    margin-bottom: 8px;
+    color: var(--accent);
+}
+
+.entry-subtitle {
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+.entry-instructions {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 13px;
+    color: var(--text-light);
+    line-height: 1.8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.entry-instructions strong {
+    color: var(--accent);
+}
+
+.entry-instructions ol {
+    margin: 8px 0 0 0;
+    padding-left: 1.5em;
+}
+
+.entry-instructions li {
+    padding-left: 0.3em;
+}
+
+.entry-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.form-label .required {
+    color: #ef4444;
+}
+
+input[type="text"] {
+    padding: 12px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+    /* 시스템 폰트 우선 → 라틴·숫자 자간 정상화, 한글은 Noto Sans KR fallback */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans KR', sans-serif;
+    font-variant-numeric: proportional-nums;
+    transition: border-color 0.3s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+input[type="text"].error {
+    border-color: #ef4444;
+}
+
+.error-message {
+    font-size: 12px;
+    color: #ef4444;
+    min-height: 0px;
+    margin-top: 2px;
+    visibility: hidden;
+}
+
+.error-message.show {
+    visibility: visible;
+}
+
+/* === Buttons === */
+.btn {
+    padding: 14px 24px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, var(--accent), var(--neon-dark));
+    color: #ffffff;
+    box-shadow: 0 4px 14px var(--neon-glow);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: var(--border);
+    color: var(--text);
+}
+
+.btn-secondary:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.btn-group .btn {
+    flex: 1;
+}
+
+/* === Activity Header (공통 패턴) === */
+.activity-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.activity-stage {
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.activity-title {
+    font-family: 'Jua', cursive;
+    font-size: 24px;
+    color: var(--text);
+}
+
+/* === Progress Bar (활동 진행률) === */
+.progress-wrap {
+    margin: 16px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #63b3ed);
+    border-radius: 4px;
+    transition: width 0.4s;
+    width: 0%;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 700;
+    min-width: 36px;
+    text-align: right;
+}
+
+/* === Mascot Comment (안내 메시지 박스) === */
+.mascot-comment {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.mascot-comment .name {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 13px;
+}
+
+/* === Bot Comment (해설 박스) === */
+.bot-comment {
+    background: var(--card);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 12px 12px 0;
+    padding: 16px;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.bot-comment strong {
+    color: var(--accent);
+}
+
+/* === Result Screen: Tabs (pill 스타일) === */
+.result-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: var(--card);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.result-tab {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: all 0.2s;
+}
+
+.result-tab.active {
+    background: transparent;
+    color: var(--accent);
+}
+
+.result-content {
+    display: none;
+}
+
+.result-content.active {
+    display: block;
+}
+
+/* === Result Screen: Cards & Stats === */
+.result-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.result-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.result-header h2 {
+    font-size: 18px;
+    color: var(--accent);
+}
+
+.result-name {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+
+.result-section {
+    margin-bottom: 20px;
+}
+
+.result-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.result-section-title .icon {
+    font-size: 16px;
+}
+
+.result-score {
+    text-align: center;
+    padding: 16px;
+    background: var(--accent-dim);
+    border-radius: 10px;
+    margin-bottom: 12px;
+}
+
+.result-score-number {
+    font-size: 36px;
+    font-family: 'Jua', cursive;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+.result-score-label {
+    font-size: 12px;
+    color: var(--text-light);
+}
+
+.result-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+}
+
+.result-stat-item:last-child {
+    border-bottom: none;
+}
+
+.result-stat-label {
+    color: var(--text-dim);
+}
+
+.result-stat-value {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.result-ranking {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.result-rank-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.result-rank-medal {
+    font-size: 20px;
+    min-width: 30px;
+    text-align: center;
+}
+
+.result-rank-name {
+    flex: 1;
+    font-size: 14px;
+}
+
+.result-rank-value {
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+/* === Action Buttons (결과 화면 하단) === */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.action-buttons .btn {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    justify-content: center;
+    text-align: center;
+}
+
+/* === Refresh Button === */
+.refresh-btn {
+    padding: 12px 24px;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 16px;
+    width: 100%;
+    transition: all 0.2s ease;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+.refresh-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+}
+
+.refresh-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* === Utility === */
+.empty-state {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-dim);
+    font-size: 13px;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-light);
+}
+
+.spinner {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>성격 유형 검사 (MBTI)</title>
+<link rel="stylesheet" href="/d_contents/01/common/common-entry.css">
+<style>
+/* 활동 고유 변수 + Black Han Sans (MBTI 코드 표시용) */
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap');
+:root {
+  --bg: #eef2fb;--card: #ffffff;--card-hover: #f5f7fe;
+  --accent: #4361ee;--accent-dim: rgba(67,97,238,0.12);
+  --accent2: #3b82f6;--accent3: #FF6B6B;--accent4: #f59e0b;--accent5: #C084FC;
+  --text: #1a1a2e;--text-dim: #64748b;--border: #dde3f0;
+}
+
+/* === MBTI 이분법 선택 UI (이 활동 고유) === */
+.q-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 16px;margin-bottom:12px}
+.q-counter{font-size:11px;color:var(--text-dim);margin-bottom:10px;text-align:center}
+.binary-choices{display:flex;flex-direction:column;gap:10px}
+.binary-btn{background:var(--card-hover);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center;font-size:14px;color:var(--text);cursor:pointer;transition:all .2s;font-family:inherit;width:100%;line-height:1.5}
+.binary-btn:hover{border-color:var(--accent);background:var(--accent-dim)}
+
+/* === MBTI 결과 고유 === */
+.mbti-code{font-family:'Black Han Sans',sans-serif;font-size:48px;color:var(--accent);text-align:center;letter-spacing:4px}
+.mbti-nickname{font-size:16px;color:var(--accent2);text-align:center;font-weight:700;margin-top:4px}
+.mbti-desc{font-size:13px;color:var(--text-dim);text-align:center;margin-top:8px}
+.axis-detail{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.axis-bar{display:flex;align-items:center;gap:8px;font-size:12px}
+.axis-label{min-width:50px;text-align:right;color:var(--text-dim)}
+.axis-bar-bg{flex:1;height:8px;background:#dde3f0;border-radius:4px;overflow:hidden;position:relative}
+.axis-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.axis-pct{min-width:36px;font-weight:700;color:var(--accent)}
+.note{font-size:12px;color:var(--text-dim);text-align:center;margin-top:12px;padding:12px;background:rgba(67,97,238,.04);border:1px solid var(--border);border-radius:var(--radius-sm)}
+
+/* === MBTI 유형 통계 목록 === */
+.mbti-stat-item{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;background:var(--card-hover);transition:opacity .2s,border-color .15s}
+.mbti-stat-item.mbti-zero{opacity:.35}
+.mbti-stat-item.has-members{cursor:pointer;user-select:none}
+.mbti-stat-item.has-members:hover{border-color:var(--accent)}
+.mbti-stat-row{display:flex;align-items:center;gap:8px}
+.mbti-stat-code{font-family:'Black Han Sans',sans-serif;font-size:15px;color:var(--accent);min-width:44px}
+.mbti-stat-name{flex:1;font-size:12px;color:var(--text-dim)}
+.mbti-stat-count{font-weight:700;font-size:14px;color:var(--text);min-width:30px;text-align:right}
+.mbti-toggle-arrow{font-size:10px;color:var(--text-dim);transition:transform .2s;flex-shrink:0}
+.mbti-stat-item.expanded .mbti-toggle-arrow{transform:rotate(180deg)}
+.mbti-stat-members{display:none;font-size:12px;color:var(--accent);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);line-height:1.8}
+.mbti-stat-item.expanded .mbti-stat-members{display:block}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="screen active" id="entryScreen"></div>
+  <div id="user-badge"><span id="badge-code"></span><span class="badge-dot">·</span><span id="badge-school"></span><span class="badge-dot">·</span><span id="badge-nick"></span></div>
+
+  <div class="screen" id="activityScreen">
+    <div class="mascot-comment">
+      <span class="name">🤖 이오봇</span><br>
+      두 문장 중 <b>나에게 더 가까운 쪽</b>을 골라봐!<br>
+      정답은 없어. 직감적으로 선택하면 돼!
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">0 / 40</div>
+    </div>
+    <div class="q-card" id="mbtiCard">
+      <div class="q-counter" id="mbtiCounter">1 / 40</div>
+      <div class="binary-choices" id="mbtiChoices"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="resultScreen">
+    <div class="result-tabs">
+      <button class="result-tab active" data-tab="myResult" onclick="switchResultTab('myResult')">나의 결과</button>
+      <button class="result-tab" data-tab="groupStats" id="groupStatsTab" onclick="switchResultTab('groupStats')">우리 반 통계</button>
+      <button class="result-tab" data-tab="nationalStats" onclick="switchResultTab('nationalStats')">전체 통계</button>
+    </div>
+    <div class="result-content active" id="myResult">
+      <div class="result-card" id="result-card">
+        <div class="result-header"><h2>🧬 나의 성격 유형</h2><div class="result-name" id="resultName"></div></div>
+        <div class="result-section"><div class="mbti-code" id="mbtiCode"></div><div class="mbti-nickname" id="mbtiNickname"></div><div class="mbti-desc" id="mbtiDesc"></div></div>
+        <div class="result-section"><div class="result-section-title"><span class="icon">📊</span> 축별 성향</div><div class="axis-detail" id="axisDetail"></div></div>
+      </div>
+      <div class="note">※ MBTI는 나를 이해하는 참고 자료일 뿐, 검사 결과만으로 진로를 결정하지는 마세요!</div>
+      <div class="bot-comment" id="bot-comment"></div>
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="downloadResult()">📥 이미지 저장</button>
+        <button class="btn btn-secondary" onclick="location.reload()">🔄 다시 하기</button>
+        <button class="btn btn-secondary" onclick="goHome()">🏠 처음으로</button>
+      </div>
+    </div>
+    <div class="result-content" id="groupStats">
+      <div class="result-card">
+        <div class="result-section-title">📊 우리 반 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">참여자 수</span><span class="result-stat-value" id="group-participants">-</span></div>
+        <div class="result-stat-item"><span class="result-stat-label">제출 완료</span><span class="result-stat-value" id="group-submitted">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">🧬 우리 반 성격 유형</div>
+        <div id="group-type-list"><div class="empty-state">새로고침을 눌러 불러오세요</div></div>
+      </div>
+      <div style="text-align:center;margin-top:12px;"><button class="btn btn-secondary" id="refreshGroupBtn" onclick="loadGroupStats()">새로고침</button></div>
+    </div>
+    <div class="result-content" id="nationalStats">
+      <div class="result-card">
+        <div class="result-section-title">🌍 전체 참여 현황</div>
+        <div class="result-stat-item"><span class="result-stat-label">전체 참여자</span><span class="result-stat-value" id="national-participants">-</span></div>
+      </div>
+      <div class="result-card">
+        <div class="result-section-title">🧬 전체 성격 유형</div>
+        <div id="national-type-list"><div class="empty-state">새로고침을 눌러 불러오세요</div></div>
+      </div>
+      <div style="text-align:center;margin-top:12px;"><button class="btn btn-secondary" id="refreshNationalBtn" onclick="loadNationalStats()">새로고침</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="/d_contents/01/common/common-entry.js"></script>
+<script>
+const MBTI_AXES=[
+  {left:'E',right:'I',leftName:'외향형(E)',rightName:'내향형(I)',label:'에너지의 방향'},
+  {left:'S',right:'N',leftName:'감각형(S)',rightName:'직관형(N)',label:'인식의 구분'},
+  {left:'T',right:'F',leftName:'사고형(T)',rightName:'감정형(F)',label:'판단의 구분'},
+  {left:'J',right:'P',leftName:'판단형(J)',rightName:'인식형(P)',label:'행동 양식'}
+];
+const mbtiQs=[
+  {axis:0,left:'여러 친구와 사귄다.',right:'몇 명의 친구들과 깊이 사귄다.'},
+  {axis:0,left:'낯선 곳에 심부름을 갈 수 있다.',right:'낯선 곳에 심부름 가는 게 무섭다.'},
+  {axis:0,left:'모임에서 말이 많은 편이다.',right:'누가 물어볼 때에만 대답한다.'},
+  {axis:0,left:'활발하고 적극적이라는 말을 많이 듣는다.',right:'조용하고 차분하다는 말을 많이 듣는다.'},
+  {axis:0,left:'내 기분을 즉시 남에게 알린다.',right:'내 기분을 마음속에만 간직한다.'},
+  {axis:0,left:'많은 친구에게 얘기하는 게 더 좋다.',right:'친한 친구들에게 이야기하는 게 더 좋다.'},
+  {axis:0,left:'친구들과 함께 공부하면 잘된다.',right:'나 혼자 공부하면 더 잘된다.'},
+  {axis:0,left:'책 읽는 것보다 사람 만나는 게 더 좋다.',right:'사람 만나는 것보다 책 읽는 게 더 좋다.'},
+  {axis:0,left:'글쓰기보다 말하기가 더 좋다.',right:'말하기보다 글쓰기가 더 좋다.'},
+  {axis:0,left:'생각이 바로 밖으로 표현된다.',right:'생각에 빠질 때가 자주 있다.'},
+  {axis:1,left:'구체적이고 정확한 표현을 잘 기억한다.',right:'상상 속의 이야기를 잘 만들어 낸다.'},
+  {axis:1,left:'주변 사람의 외모나 특징을 잘 기억한다.',right:'물건을 잃어버릴 때가 종종 있다.'},
+  {axis:1,left:'꾸준하고 참을성 있다는 말을 듣는다.',right:'창의적이고 독창적이라는 말을 듣는다.'},
+  {axis:1,left:'손으로 직접 하는 활동이 좋다.',right:'기발한 질문을 많이 하는 편이다.'},
+  {axis:1,left:'그려진 그림에 색칠하는 것이 더 좋다.',right:'직접 선을 긋고 색칠하는 게 더 좋다.'},
+  {axis:1,left:'자세한 내용을 잘 암기할 수 있다.',right:'부분보다는 전체의 틀이 잘 보인다.'},
+  {axis:1,left:'남들 하는 대로 따라 하는 게 편하다.',right:'스스로 자기만의 방법을 만드는 게 편하다.'},
+  {axis:1,left:'"그게 진짜야?" 식의 질문을 한다.',right:'공상 속에 친구가 있기도 하다.'},
+  {axis:1,left:'꼼꼼하다는 말을 자주 듣는다.',right:'"하고 싶다, 되고 싶다"라는 꿈이 많다.'},
+  {axis:1,left:'관찰을 통해 더 잘 배운다.',right:'누구나 하는 일은 재미가 없다.'},
+  {axis:2,left:'"왜?"라는 질문을 자주 한다.',right:'남의 말을 잘 따르는 편이다.'},
+  {axis:2,left:'의지가 강한 편이다.',right:'인정이 많다는 말을 듣는 편이다.'},
+  {axis:2,left:'꼬치꼬치 따지기를 잘하는 편이다.',right:'협조적이고 순한 편이다.'},
+  {axis:2,left:'참을성이 있다는 말을 듣는 편이다.',right:'어려운 사람을 보면 마음이 안 좋다.'},
+  {axis:2,left:'공평한 사람이 되고 싶다.',right:'친절한 사람이 되고 싶다.'},
+  {axis:2,left:'야단을 맞아도 울지 않는 편이다.',right:'야단을 맞으면 눈물을 참을 수 없다.'},
+  {axis:2,left:'어른이 머리를 쓰다듬으면 어색하다.',right:'어른이 머리를 쓰다듬으면 기분 좋다.'},
+  {axis:2,left:'논리적으로 설명을 잘한다.',right:'이야기에 요점이 없을 때가 있다.'},
+  {axis:2,left:'악당이 당하는 장면은 통쾌하다.',right:'악당이지만 그래도 불쌍하다.'},
+  {axis:2,left:'결정하는 일이 어렵지 않다.',right:'양보를 잘하고 결정하기가 어렵다.'},
+  {axis:3,left:'공부나 일을 먼저 하고 논다.',right:'먼저 놀고 난 후에 일한다.'},
+  {axis:3,left:'쫓기면서 일을 하는 게 싫다.',right:'막판에 몰아서 일할 수도 있다.'},
+  {axis:3,left:'정리정돈 된 깨끗한 방이 좋다.',right:'방이 어지러워도 상관없다.'},
+  {axis:3,left:'사전에 계획을 짜는 편이다.',right:'계획을 짜는 것은 왠지 불편하다.'},
+  {axis:3,left:'규칙적인 생활을 하는 편이다.',right:'상황에 따라 유연하게 행동한다.'},
+  {axis:3,left:'준비물을 잘 챙기는 편이다.',right:'준비물을 잘 잊어버리는 편이다.'},
+  {axis:3,left:'계획에 없던 일이 생기면 짜증이 난다.',right:'틀에 박힌 생활은 재미가 없다.'},
+  {axis:3,left:'목표가 뚜렷하고 실천을 잘한다.',right:'색다른 것이 좋고 짧은 공상을 한다.'},
+  {axis:3,left:'계획적으로 일하는 편이다.',right:'그때그때 일을 해치우는 편이다.'},
+  {axis:3,left:'남의 지시에 따르는 편이다.',right:'내 마음을 따라 행동하는 편이다.'}
+];
+const MBTI_NICKNAMES={
+  ISTJ:'세상의 소금형',ISFJ:'임금 뒤편의 권력형',INFJ:'예언자형',INTJ:'과학자형',
+  ISTP:'백과사전형',ISFP:'성인군자형',INFP:'잔 다르크형',INTP:'아이디어 뱅크형',
+  ESTP:'수완 좋은 활동가형',ESFP:'사교적인 유형',ENFP:'스파크형',ENTP:'발명가형',
+  ESTJ:'사업가형',ESFJ:'친선 도모형',ENFJ:'언변 능숙형',ENTJ:'지도자형'
+};
+const MBTI_DESCS={
+  ISTJ:{
+    desc:'책임감이 강하고 꼼꼼하며, 한번 맡은 일은 반드시 끝까지 해내는 신뢰할 수 있는 유형이야. 규칙과 질서를 중요하게 생각하고 계획적으로 행동하는 편이라 주변에서 든든한 존재로 여겨지는 경우가 많아.',
+    careers:'법조인, 공무원, 회계사, 의사, 경찰관, 군인'
+  },
+  ISFJ:{
+    desc:'따뜻하고 배려심이 깊으며, 주변 사람들을 조용히 돌보는 헌신적인 유형이야. 세심한 관찰력과 끈기로 맡은 역할을 성실히 해나가고, 남들이 눈치채지 못하는 곳에서도 묵묵히 기여해.',
+    careers:'간호사, 교사, 사회복지사, 상담사, 영양사, 약사'
+  },
+  INFJ:{
+    desc:'깊은 통찰력과 강한 가치관을 가진 이상주의적 유형이야. 사람들의 마음을 잘 이해하고 세상을 더 좋게 만들고 싶은 마음이 강해. 조용하지만 자신이 믿는 방향으로 꾸준히 나아가는 힘이 있어.',
+    careers:'상담사, 심리학자, 사회운동가, 작가, 교사, 의료 분야'
+  },
+  INTJ:{
+    desc:'독립적이고 전략적인 사고를 가진 유형으로, 복잡한 문제를 분석하고 장기적인 계획을 세우는 데 뛰어나. 높은 기준을 가지고 목표를 향해 집요하게 나아가며, 스스로 세운 계획을 믿는 편이야.',
+    careers:'과학자, 연구원, 소프트웨어 개발자, 전략 기획자, 엔지니어'
+  },
+  ISTP:{
+    desc:'논리적이고 실용적이며, 손으로 직접 해결하는 걸 좋아하는 유형이야. 호기심이 많고 다양한 분야의 지식을 스스로 흡수하며, 위기 상황에서도 침착하게 최선의 방법을 찾아내.',
+    careers:'엔지니어, 정비사, 파일럿, 외과의사, 소프트웨어 개발자'
+  },
+  ISFP:{
+    desc:'온화하고 예술적 감성이 풍부한 유형으로, 자신만의 방식으로 세상의 아름다움을 표현하는 걸 좋아해. 경쟁보다는 협력을 선호하고 자신의 가치관에 따라 조용하지만 뚜렷하게 행동해.',
+    careers:'디자이너, 예술가, 요리사, 수의사, 플로리스트, 사진작가'
+  },
+  INFP:{
+    desc:'감수성이 풍부하고 이상을 중요하게 생각하는 유형이야. 자신이 믿는 가치를 위해서라면 열정적으로 행동하며, 사람들의 이야기에 깊이 공감하고 진심으로 응원해.',
+    careers:'작가, 심리상담사, 예술가, 사회복지사, 교육자, 번역가'
+  },
+  INTP:{
+    desc:'지적 호기심이 넘치고 논리적 분석을 즐기는 유형이야. 기존의 틀을 의심하고 새로운 이론이나 아이디어를 탐구하는 걸 좋아해. 혼자 깊이 파고드는 시간 속에서 가장 잘 성장해.',
+    careers:'과학자, 수학자, 소프트웨어 개발자, 철학자, 경제학자, 연구원'
+  },
+  ESTP:{
+    desc:'에너지가 넘치고 현실 감각이 뛰어난 유형이야. 이론보다 행동을 중시하고 새로운 경험을 즐기며, 위기 상황에서도 빠르고 유연하게 대처하는 능력이 탁월해.',
+    careers:'영업·마케팅, 스포츠 선수, 창업가, 소방관, 응급의학 분야'
+  },
+  ESFP:{
+    desc:'활발하고 긍정적이며 주변 사람들에게 즐거움과 에너지를 전파하는 유형이야. 즉흥적이고 유연하며 어디서든 분위기를 밝게 만들어. 사람들과 함께할 때 가장 빛이 나.',
+    careers:'연예인, 이벤트 플래너, 관광 가이드, 유아교육, 헬스케어 분야'
+  },
+  ENFP:{
+    desc:'창의적이고 열정적이며 새로운 가능성에 쉽게 설레는 유형이야. 다양한 사람들과 자연스럽게 어울리고 아이디어를 쏟아내며 주변에 영감을 줘. 가능성을 보는 눈이 남달라.',
+    careers:'크리에이터, 광고 기획자, 작가, 상담사, 기업가, 교사'
+  },
+  ENTP:{
+    desc:'도전적이고 창의적인 사고로 새로운 아이디어를 끊임없이 만들어내는 유형이야. 여러 관점에서 문제를 바라보는 능력이 뛰어나고, 토론을 통해 아이디어를 발전시키는 걸 즐겨.',
+    careers:'사업가, 변호사, 발명가, 마케터, 정치인, 컨설턴트'
+  },
+  ESTJ:{
+    desc:'체계적이고 결단력 있으며, 조직을 효율적으로 이끄는 리더십이 강한 유형이야. 규칙과 전통을 중시하고 맡은 책임을 철저히 완수해. 목표를 향한 추진력이 특히 강해.',
+    careers:'관리자, 행정가, 경영자, 군인, 판사, 금융 분야'
+  },
+  ESFJ:{
+    desc:'따뜻하고 사교적이며 다른 사람들을 돕는 것에서 보람을 느끼는 유형이야. 공동체의 화합을 중요하게 생각하고 주변 사람들의 필요를 세심하게 살피는 능력이 뛰어나.',
+    careers:'교사, 간호사, 인사 담당자, 이벤트 코디네이터, 사회복지사'
+  },
+  ENFJ:{
+    desc:'카리스마 있고 타인에 대한 공감 능력이 뛰어난 유형이야. 주변 사람들이 성장하도록 이끄는 것에서 큰 보람을 느끼며, 자연스럽게 신뢰받는 리더가 되는 경우가 많아.',
+    careers:'교사, 상담사, 정치인, 인사 관리자, 코치, NGO 활동가'
+  },
+  ENTJ:{
+    desc:'전략적이고 단호하며 목표 달성을 위해 사람과 자원을 효율적으로 조직하는 유형이야. 도전적인 상황을 즐기고 강한 의지로 큰 그림을 그려 나가. 타고난 추진력을 가진 리더야.',
+    careers:'CEO·창업가, 변호사, 정치인, 프로젝트 매니저, 투자 분야'
+  }
+};
+
+let mbtiIdx=0,mbtiScores=[[0,0],[0,0],[0,0],[0,0]],shuffledQs=[];
+
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});document.getElementById(id).classList.add('active');window.scrollTo(0,0)}
+
+function startActivity(){
+  show('activityScreen');
+  mbtiIdx=0;mbtiScores=[[0,0],[0,0],[0,0],[0,0]];
+  // 문항 순서 랜덤 (Fisher-Yates)
+  shuffledQs=mbtiQs.slice();
+  for(var i=shuffledQs.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=shuffledQs[i];shuffledQs[i]=shuffledQs[j];shuffledQs[j]=tmp}
+  showMBTICard();
+}
+
+function showMBTICard(){
+  if(mbtiIdx>=shuffledQs.length){finishActivity();return}
+  var q=shuffledQs[mbtiIdx];
+  document.getElementById('mbtiCounter').textContent=(mbtiIdx+1)+' / 40';
+  document.getElementById('progressFill').style.width=(mbtiIdx/40*100)+'%';
+  document.getElementById('progressText').textContent=mbtiIdx+' / 40';
+  // 선택지 위/아래 배치를 랜덤으로 뒤집어서 항상 위쪽=E/S/T/J가 되지 않도록 함
+  var swap=Math.random()<0.5;
+  var topText=swap?q.right:q.left;
+  var bottomText=swap?q.left:q.right;
+  var topVal=swap?'right':'left';
+  var bottomVal=swap?'left':'right';
+  document.getElementById('mbtiChoices').innerHTML='<button class="binary-btn" onclick="mbtiAnswer(\''+topVal+'\')">'+topText+'</button><button class="binary-btn" onclick="mbtiAnswer(\''+bottomVal+'\')">'+bottomText+'</button>';
+}
+
+var _mbtiLock=false;
+function mbtiAnswer(side){
+  if(_mbtiLock)return;
+  _mbtiLock=true;
+  var btns=document.querySelectorAll('#mbtiChoices .binary-btn');
+  btns.forEach(function(b){b.disabled=true;b.style.pointerEvents='none';});
+  var q=shuffledQs[mbtiIdx];
+  if(side==='left')mbtiScores[q.axis][0]++;else mbtiScores[q.axis][1]++;
+  mbtiIdx++;
+  showMBTICard();
+  setTimeout(function(){_mbtiLock=false;},150);
+}
+
+function finishActivity(){
+  show('resultScreen');
+  if(EoEntry.state.mode!=='group'){var groupTab=document.getElementById('groupStatsTab');if(groupTab)groupTab.style.display='none'}
+  showMyResult();saveResult();
+}
+
+function showMyResult(){
+  var s=EoEntry.state;
+  document.getElementById('resultName').textContent=(s.nickname||'')+'의 성격 유형';
+  var code=MBTI_AXES.map(function(ax,i){return mbtiScores[i][0]>=mbtiScores[i][1]?ax.left:ax.right}).join('');
+  var nickname=MBTI_NICKNAMES[code]||'';
+  document.getElementById('mbtiCode').textContent=code;
+  document.getElementById('mbtiNickname').textContent=nickname;
+  var descParts=[];MBTI_AXES.forEach(function(ax,i){descParts.push(mbtiScores[i][0]>=mbtiScores[i][1]?ax.leftName:ax.rightName)});
+  document.getElementById('mbtiDesc').textContent=descParts.join(' · ');
+
+  var axisHtml='';
+  MBTI_AXES.forEach(function(ax,i){
+    var total=mbtiScores[i][0]+mbtiScores[i][1];var leftPct=Math.round(mbtiScores[i][0]/total*100);
+    var winner=leftPct>=50?ax.left:ax.right;var winPct=leftPct>=50?leftPct:100-leftPct;
+    var color=leftPct>=50?'var(--accent)':'var(--accent2)';
+    axisHtml+='<div class="axis-bar"><span class="axis-label">'+ax.leftName.split('(')[0]+'</span><div class="axis-bar-bg"><div class="axis-bar-fill" style="width:'+leftPct+'%;background:'+color+'"></div></div><span class="axis-pct">'+winner+' '+winPct+'%</span></div>';
+  });
+  document.getElementById('axisDetail').innerHTML=axisHtml;
+
+  var typeDesc=MBTI_DESCS[code]||{desc:'',careers:''};
+  document.getElementById('bot-comment').innerHTML=
+    '<strong>'+s.nickname+'</strong> 님은 <strong>'+code+'('+nickname+')</strong> 유형이야! 🎉<br><br>'+
+    typeDesc.desc+
+    (typeDesc.careers?'<br><br>🧭 <strong>어울리는 진로 분야</strong><br>'+typeDesc.careers:'');
+}
+
+async function saveResult(){
+  try{var code=MBTI_AXES.map(function(ax,i){return mbtiScores[i][0]>=mbtiScores[i][1]?ax.left:ax.right}).join('');
+    await fetch(EoEntry.API_BASE+'/result.php?action=submit',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({participant_id:EoEntry.state.participantId,activity_id:'mbti_personality',
+        group_id:EoEntry.state.groupId||null,
+        result_data:{mbtiCode:code,scores:mbtiScores,timestamp:new Date().toISOString()}})});
+  }catch(e){console.error('Save error:',e)}
+}
+var ALL_MBTI_TYPES=['ISTJ','ISFJ','INFJ','INTJ','ISTP','ISFP','INFP','INTP','ESTP','ESFP','ENFP','ENTP','ESTJ','ESFJ','ENFJ','ENTJ'];
+
+function buildMbtiTypeHtml(code, count, members){
+  var isZero=count===0;
+  var hasMembers=members&&members.length>0;
+  var clickAttr=hasMembers?' onclick="this.classList.toggle(\'expanded\')"':'';
+  var arrowHtml=hasMembers?'<span class="mbti-toggle-arrow">▼</span>':'';
+  var membersHtml=hasMembers?'<div class="mbti-stat-members">👤 '+members.join(', ')+'</div>':'';
+  return '<div class="mbti-stat-item'+(isZero?' mbti-zero':'')+(hasMembers?' has-members':'')+'"'+clickAttr+'>'+
+    '<div class="mbti-stat-row">'+
+      '<span class="mbti-stat-code">'+code+'</span>'+
+      '<span class="mbti-stat-name">'+(MBTI_NICKNAMES[code]||'')+'</span>'+
+      '<span class="mbti-stat-count">'+count+'명</span>'+
+      arrowHtml+
+    '</div>'+
+    membersHtml+
+  '</div>';
+}
+
+async function loadGroupStats(){
+  EoEntry.refreshCooldown('refreshGroupBtn');
+  try{
+    var res=await fetch(EoEntry.API_BASE+'/result.php?action=group&group_id='+EoEntry.state.groupId+'&activity_id=mbti_personality');
+    var data=await res.json();
+    document.getElementById('group-participants').textContent=data.total_participants+'명';
+    document.getElementById('group-submitted').textContent=data.submitted_count+'명';
+    var types=data.mbti_types||{};
+    var html='';
+    ALL_MBTI_TYPES.forEach(function(code){
+      var t=types[code]||{count:0,members:[]};
+      html+=buildMbtiTypeHtml(code,t.count||0,t.members||[]);
+    });
+    document.getElementById('group-type-list').innerHTML=html;
+  }catch(e){console.error('Group stats error:',e);document.getElementById('group-type-list').innerHTML='<div class="empty-state">불러오기 실패</div>';}
+}
+
+async function loadNationalStats(){
+  EoEntry.refreshCooldown('refreshNationalBtn');
+  try{
+    var res=await fetch(EoEntry.API_BASE+'/result.php?action=national&activity_id=mbti_personality');
+    var data=await res.json();
+    document.getElementById('national-participants').textContent=data.total_participants+'명';
+    var types=data.mbti_types||{};
+    var html='';
+    ALL_MBTI_TYPES.forEach(function(code){
+      html+=buildMbtiTypeHtml(code,types[code]||0,null);
+    });
+    document.getElementById('national-type-list').innerHTML=html;
+  }catch(e){console.error('National stats error:',e);document.getElementById('national-type-list').innerHTML='<div class="empty-state">불러오기 실패</div>';}
+}
+
+function switchResultTab(tabName){document.querySelectorAll('.result-tab').forEach(function(t){t.classList.remove('active')});document.querySelectorAll('.result-content').forEach(function(c){c.classList.remove('active')});document.querySelector('[data-tab="'+tabName+'"]').classList.add('active');document.getElementById(tabName).classList.add('active')}
+async function downloadResult(){
+  try{
+    var dpr=window.devicePixelRatio||1;
+    var badge=document.getElementById('user-badge');
+    var prevBadge=badge?badge.style.display:'';
+    if(badge) badge.style.display='none';
+    var canvas=await html2canvas(document.getElementById('result-card'),{
+      backgroundColor:'#f5f8ff',scale:dpr*2,useCORS:true,logging:false,
+      scrollX:0,scrollY:-window.scrollY
+    });
+    if(badge) badge.style.display=prevBadge;
+    var link=document.createElement('a');
+    link.download='MBTI_'+EoEntry.state.nickname+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){alert('이미지 저장에 실패했습니다.');}
+}
+function goHome(){var ctx=EoEntry.state.context;if(ctx==='high'){location.href='/d_contents/01/high/'}else if(ctx==='middle'){location.href='/d_contents/01/middle/'}else{location.href='/d_contents/01/middle/'}}
+
+EoEntry.init({activityId:'mbti_personality',title:'🧬 성격 유형 검사',subtitle:'MBTI로 나의 성격 유형을 알아보세요!',onStart:function(){startActivity()}});
+</script>
+</body>
+</html>

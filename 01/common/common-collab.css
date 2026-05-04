@@ -1,0 +1,457 @@
+/* ============================================================
+   EoBooks Digital Contents — Collaborative Activity Styles
+   모둠 활동 전용 스타일: 초기화면, 대기실, 호스트 컨트롤, 대기 상태
+   common-entry.css와 동일한 CSS 변수 체계를 사용합니다.
+
+   [v1.0] 2026-04-20
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Jua&display=swap');
+
+:root {
+    --bg: #eef2fb;
+    --neon: #4361ee;
+    --neon-dark: #3451c7;
+    --neon-glow: rgba(67, 97, 238, 0.25);
+    --text: #1a1a2e;
+    --text-light: #64748b;
+    --border: #dde3f0;
+    --accent: #4361ee;
+    --accent-dim: rgba(67, 97, 238, 0.1);
+    --card: #ffffff;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --green: #10b981;
+    --green-bg: #ecfdf5;
+    --orange: #f59e0b;
+    --orange-bg: #fffbeb;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+body::before {
+    content: '';
+    position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(67,97,238,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(99,179,237,0.06) 0%, transparent 50%);
+    z-index: 0; pointer-events: none;
+}
+
+.collab-container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+}
+
+/* === Screen Management === */
+.collab-screen { display: none; animation: collabFadeIn 0.3s ease-in; }
+.collab-screen.active { display: flex; flex-direction: column; }
+@keyframes collabFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* === Session Badge === */
+.collab-badge {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.collab-badge.show { display: flex; }
+.collab-badge .badge-code { color: var(--accent); font-weight: 600; }
+.collab-badge .badge-school { color: var(--text); }
+.collab-badge .badge-nick { color: var(--text-light); }
+.collab-badge .badge-dot { color: var(--border); margin: 0 4px; }
+.collab-badge .badge-role {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 6px;
+}
+.collab-badge .badge-role.host { background: var(--orange-bg); color: var(--orange); }
+.collab-badge .badge-role.student { background: var(--accent-dim); color: var(--accent); }
+
+/* ===========================
+   1. 초기 화면 (역할 선택)
+   =========================== */
+.collab-entry {
+    gap: 24px;
+    justify-content: center;
+    min-height: 100vh;
+}
+.collab-entry-header { text-align: center; }
+.collab-entry-title {
+    font-family: 'Jua', cursive;
+    font-size: 32px;
+    color: var(--accent);
+    margin-bottom: 8px;
+}
+.collab-entry-subtitle {
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+/* 역할 선택 카드 */
+.role-cards {
+    display: flex; gap: 12px;
+}
+.role-card {
+    flex: 1;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-decoration: none;
+    color: var(--text);
+}
+.role-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+.role-card .role-icon { font-size: 36px; margin-bottom: 8px; }
+.role-card .role-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.role-card .role-desc { font-size: 12px; color: var(--text-light); }
+
+/* === 폼 공통 === */
+.collab-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.collab-form .form-group { display: flex; flex-direction: column; gap: 4px; }
+.collab-form .form-label { font-size: 15px; font-weight: 600; color: var(--text); }
+.collab-form .form-label .required { color: #ef4444; }
+.collab-form input[type="text"],
+.collab-form input[type="number"] {
+    padding: 12px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans KR', sans-serif;
+    transition: border-color 0.3s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.collab-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.collab-form .error-msg {
+    font-size: 12px; color: #ef4444;
+    min-height: 18px; margin-top: 2px;
+}
+.collab-form .form-back {
+    font-size: 13px; color: var(--text-light);
+    background: none; border: none; cursor: pointer;
+    text-align: left; padding: 0; margin-bottom: 4px;
+    font-family: inherit;
+}
+.collab-form .form-back:hover { color: var(--accent); }
+
+/* === Buttons (collab) === */
+.collab-btn {
+    padding: 14px 24px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+    text-align: center;
+}
+.collab-btn-primary {
+    background: linear-gradient(90deg, var(--accent), var(--neon-dark));
+    color: #fff;
+    box-shadow: 0 4px 14px var(--neon-glow);
+}
+.collab-btn-primary:active:not(:disabled) { transform: scale(0.98); }
+.collab-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.collab-btn-secondary {
+    background: var(--border);
+    color: var(--text);
+}
+.collab-btn-success {
+    background: linear-gradient(90deg, var(--green), #059669);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(16,185,129,0.25);
+}
+.collab-btn-success:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ===========================
+   2. 대기실 (Lobby)
+   =========================== */
+.lobby-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.lobby-code-display {
+    font-family: 'Jua', cursive;
+    font-size: 48px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin: 8px 0;
+}
+.lobby-school {
+    font-size: 14px;
+    color: var(--text-light);
+}
+.lobby-count {
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 600;
+    margin-top: 12px;
+}
+.lobby-count .current { color: var(--accent); font-size: 20px; }
+
+/* 참여자 목록 */
+.lobby-participants {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+    min-height: 120px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.lobby-participants-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-light);
+    margin-bottom: 12px;
+}
+.lobby-participant-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.lobby-participant-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: var(--accent-dim);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    animation: tagPop 0.3s ease-out;
+}
+.lobby-participant-tag.host {
+    background: var(--orange-bg);
+    color: var(--orange);
+}
+@keyframes tagPop {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.lobby-waiting-msg {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-light);
+    font-size: 14px;
+}
+.lobby-waiting-msg .spinner-sm {
+    display: inline-block; width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* QR 코드 영역 (방장 대기실) */
+.lobby-qr {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.lobby-qr-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-light);
+    margin-bottom: 12px;
+}
+.lobby-qr-canvas {
+    display: inline-block;
+    padding: 12px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+.lobby-qr-url {
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-light);
+    word-break: break-all;
+    line-height: 1.5;
+}
+.lobby-qr-url a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+/* 시작 버튼 영역 (방장만) */
+.lobby-host-controls {
+    text-align: center;
+    margin-top: 8px;
+}
+.lobby-min-warning {
+    font-size: 12px;
+    color: var(--orange);
+    margin-bottom: 8px;
+}
+
+/* ===========================
+   3. 활동 중 — 호스트 모니터
+   =========================== */
+.host-monitor {
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    text-align: center;
+}
+.host-phase-label {
+    font-size: 14px;
+    color: var(--text-light);
+    font-weight: 500;
+}
+.host-phase-name {
+    font-family: 'Jua', cursive;
+    font-size: 28px;
+    color: var(--accent);
+    margin: 8px 0;
+}
+.host-progress-ring {
+    width: 160px; height: 160px;
+    position: relative;
+    margin: 0 auto;
+}
+.host-progress-ring svg {
+    width: 100%; height: 100%;
+    transform: rotate(-90deg);
+}
+.host-progress-ring .ring-bg {
+    fill: none; stroke: var(--border); stroke-width: 10;
+}
+.host-progress-ring .ring-fill {
+    fill: none; stroke: var(--accent); stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s ease;
+}
+.host-progress-text {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+.host-progress-text .num {
+    font-family: 'Jua', cursive;
+    font-size: 36px;
+    color: var(--accent);
+}
+.host-progress-text .label {
+    font-size: 12px;
+    color: var(--text-light);
+}
+.host-next-btn {
+    margin-top: 16px;
+}
+
+/* ===========================
+   4. 활동 중 — 학생 대기 상태
+   =========================== */
+.student-waiting {
+    text-align: center;
+    padding: 40px 20px;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+}
+.student-waiting .waiting-icon { font-size: 48px; }
+.student-waiting .waiting-title {
+    font-size: 18px; font-weight: 700; color: var(--text);
+}
+.student-waiting .waiting-desc {
+    font-size: 14px; color: var(--text-light);
+}
+
+/* ===========================
+   5. 확인 팝업 (인원 미달 등)
+   =========================== */
+.collab-popup-overlay {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 300;
+    align-items: center; justify-content: center;
+}
+.collab-popup-overlay.show { display: flex; }
+.collab-popup {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 24px;
+    max-width: 360px;
+    width: 85%;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+.collab-popup h3 {
+    font-size: 16px; font-weight: 700; margin-bottom: 8px;
+}
+.collab-popup p {
+    font-size: 13px; color: var(--text-light); margin-bottom: 16px; line-height: 1.6;
+}
+.collab-popup .popup-btns {
+    display: flex; gap: 8px;
+}
+.collab-popup .popup-btns .collab-btn { flex: 1; padding: 10px; font-size: 14px; }
+
+/* ===========================
+   6. 반응형
+   =========================== */
+@media (max-width: 480px) {
+    .collab-entry-title { font-size: 26px; }
+    .role-cards { flex-direction: column; }
+    .lobby-code-display { font-size: 36px; }
+    .host-phase-name { font-size: 22px; }
+    .host-progress-ring { width: 120px; height: 120px; }
+    .host-progress-text .num { font-size: 28px; }
+}

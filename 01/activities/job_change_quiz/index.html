@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ 직업 변화 스피드 퀴즈</title>
+<link rel="stylesheet" href="/d_contents/01/common/common-entry.css">
+<style>
+:root{--bg:#eef2fb;--card:#ffffff;--neon:#4361ee;--neon-dim:#3451c7;--neon-glow:rgba(67,97,238,.15);--green:#22c55e;--green-dim:rgba(34,197,94,.12);--red:#ef4444;--red-dim:rgba(239,68,68,.1);--yellow:#f59e0b;--orange:#f97316;--text:#1a1a2e;--dim:#64748b;--border:#dde3f0}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh;padding:20px;max-width:520px;margin:0 auto}
+.screen.active{display:flex;flex-direction:column}
+
+/* Step pills & progress */
+.step-pills{display:flex;gap:6px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+.step-pill{padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#e8ecf8;color:var(--dim);transition:all .3s}
+.step-pill.active{background:var(--neon);color:#fff}
+.step-pill.done{background:rgba(67,97,238,.12);color:var(--neon)}
+.progress-bar{height:4px;background:#dde3f0;border-radius:2px;margin:0 0 20px;overflow:hidden}
+.progress-bar .fill{height:100%;background:linear-gradient(90deg,var(--neon),#4da6ff);transition:width .5s;border-radius:2px}
+
+/* Module header */
+.module-header{text-align:center;margin-bottom:20px}
+.module-header .icon{font-size:40px;margin-bottom:8px}
+.module-header h2{font-family:'Jua',sans-serif;font-size:1.5rem}
+.module-header p{color:var(--dim);font-size:13px;margin-top:4px}
+
+/* Buttons — common-entry.css 기본 스타일 상속, 활동 고유 보완만 */
+.btn{padding:14px 24px;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s ease;font-family:'Noto Sans KR',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary{background:linear-gradient(90deg,var(--neon),var(--neon-dim));color:#fff;box-shadow:0 4px 14px var(--neon-glow)}
+.btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(67,97,238,.35)}
+.btn-primary:active:not(:disabled){transform:scale(.98)}
+.btn-secondary{background:var(--border);color:var(--text)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* Domino chain */
+.domino-chain{display:flex;flex-direction:column;gap:0;margin:16px 0;position:relative}
+.domino-node{padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;text-align:center;font-size:0.95rem;font-weight:500;line-height:1.4;position:relative;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.domino-node.filled{background:var(--card);border-color:var(--border)}
+.domino-node.blank{background:#fff8e1;border:2px dashed var(--yellow);cursor:default;min-height:48px;display:flex;align-items:center;justify-content:center;color:var(--yellow);font-weight:700}
+.domino-node.blank.active-slot{border-color:var(--orange);background:#fff3cd;animation:pulse 1.5s infinite}
+.domino-node.blank.correct{background:var(--green-dim);border:2px solid var(--green);color:var(--green);animation:none}
+.domino-node.blank.wrong{background:var(--red-dim);border:2px solid var(--red);color:var(--red);animation:shake .4s}
+.domino-arrow{text-align:center;font-size:20px;color:var(--neon);padding:4px 0;line-height:1}
+.domino-label{font-size:10px;color:var(--dim);text-align:center;margin-bottom:4px;font-weight:600;letter-spacing:1px}
+
+/* Option cards */
+.option-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.option-card{padding:14px 10px;background:var(--card);border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all .15s;text-align:center;font-size:0.88rem;font-weight:500;user-select:none;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.option-card:hover{border-color:var(--neon);background:var(--neon-glow)}
+.option-card.selected{border-color:var(--neon);background:var(--neon-glow);transform:scale(1.03)}
+.option-card.correct-reveal{border-color:var(--green);background:var(--green-dim);color:var(--green);font-weight:700;box-shadow:0 2px 12px rgba(34,197,94,.2);transform:scale(1.03)}
+.option-card.wrong-reveal{border-color:transparent;background:#f5f5f5;color:#ccc;opacity:.35;box-shadow:none}
+.option-card.disabled{pointer-events:none}
+
+/* Hint & Explanation */
+.hint-box{display:none;padding:12px 16px;background:#fff8e1;border:1px solid var(--yellow);border-radius:12px;margin-top:12px;font-size:0.85rem;color:#92400e;line-height:1.5}
+.hint-box .hint-label{font-weight:700;color:var(--orange)}
+.explain-box{display:none;padding:14px 16px;background:rgba(34,197,94,.08);border:1px solid var(--green);border-radius:12px;margin-top:12px;font-size:0.85rem;color:#166534;line-height:1.6}
+
+/* Question counter */
+.q-counter{text-align:center;margin-bottom:12px;font-size:13px;color:var(--dim);font-weight:600}
+
+/* ===== TIME ATTACK STYLES ===== */
+
+/* Ready screen */
+.ready-content{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px}
+.ready-icon{font-size:64px;animation:pulse 1.5s infinite}
+.ready-title{font-family:'Jua',sans-serif;font-size:1.8rem;color:var(--neon)}
+.ready-desc{color:var(--dim);font-size:0.95rem;line-height:1.7;max-width:360px}
+.ready-highlight{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;padding:8px 20px;border-radius:30px;font-size:1.3rem;font-weight:900;font-family:'Jua',sans-serif;margin:8px 0}
+.ready-tips{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 20px;text-align:left;font-size:0.85rem;color:var(--dim);line-height:1.8;max-width:360px}
+.ready-tips strong{color:var(--text)}
+.ready-btn{padding:18px 48px;font-size:1.2rem;background:linear-gradient(135deg,var(--neon),#6c8cff);border:none;border-radius:16px;color:#fff;font-weight:900;cursor:pointer;font-family:'Jua',sans-serif;transition:all .3s;box-shadow:0 4px 20px rgba(67,97,238,.4)}
+.ready-btn:hover{transform:translateY(-3px) scale(1.05);box-shadow:0 8px 30px rgba(67,97,238,.5)}
+
+/* Timer bar */
+.timer-container{position:relative;margin-bottom:16px}
+.timer-bar{height:8px;background:#e8ecf8;border-radius:4px;overflow:hidden}
+.timer-bar .timer-fill{height:100%;background:linear-gradient(90deg,var(--neon),#4da6ff);transition:width .1s linear;border-radius:4px}
+.timer-bar .timer-fill.warning{background:linear-gradient(90deg,var(--orange),#fbbf24)}
+.timer-bar .timer-fill.danger{background:linear-gradient(90deg,var(--red),#f97316);animation:timerPulse .5s infinite}
+.timer-text{position:absolute;right:0;top:-22px;font-family:'Jua',sans-serif;font-size:1.3rem;color:var(--neon);font-weight:900;transition:color .3s}
+.timer-text.warning{color:var(--orange)}
+.timer-text.danger{color:var(--red);animation:timerPulse .5s infinite}
+
+/* Score counter in challenge mode */
+.challenge-hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:8px 12px;background:var(--card);border-radius:12px;border:1px solid var(--border)}
+.hud-item{text-align:center}
+.hud-label{font-size:10px;color:var(--dim);font-weight:600}
+.hud-value{font-family:'Jua',sans-serif;font-size:1.3rem;color:var(--neon)}
+.hud-value.wrong-val{color:var(--red)}
+
+/* Flash effect on correct/wrong */
+.flash-correct{animation:flashGreen .4s ease}
+.flash-wrong{animation:flashRed .4s ease}
+@keyframes flashGreen{0%{background:rgba(34,197,94,.3)}100%{background:transparent}}
+@keyframes flashRed{0%{background:rgba(239,68,68,.3)}100%{background:transparent}}
+@keyframes timerPulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* Time up overlay */
+.timeup-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;animation:fadeIn .3s}
+.timeup-card{background:#fff;border-radius:24px;padding:40px;text-align:center;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.timeup-icon{font-size:64px;margin-bottom:12px}
+.timeup-title{font-family:'Jua',sans-serif;font-size:1.8rem;color:var(--text);margin-bottom:8px}
+.timeup-score{font-family:'Jua',sans-serif;font-size:3rem;color:var(--neon);margin:12px 0}
+.timeup-detail{color:var(--dim);font-size:0.9rem;margin-bottom:20px}
+
+/* Result styles — 탭은 common-entry.css 상속 */
+.result-content{display:none}
+.result-content.active{display:block;animation:fadeInUp .3s ease}
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.result-section-title{font-size:1rem;font-weight:700;margin-bottom:12px;color:var(--text)}
+.result-stat-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #dde3f0}
+.result-stat-item:last-child{border-bottom:none}
+.result-stat-label{color:var(--dim);font-size:13px}
+.result-stat-value{color:var(--neon);font-weight:700;font-size:1.1rem}
+.result-score{text-align:center;padding:20px 0}
+.result-score-number{font-family:'Jua',sans-serif;font-size:48px;color:var(--neon);margin-bottom:4px}
+.result-score-label{color:var(--dim);font-size:12px}
+.area-bars{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.area-bar-item{display:flex;align-items:center;gap:10px}
+.area-bar-label{min-width:70px;font-size:12px;font-weight:600;color:var(--dim)}
+.area-bar-track{flex:1;height:20px;background:#e8ecf8;border-radius:10px;overflow:hidden;position:relative}
+.area-bar-fill{height:100%;border-radius:10px;transition:width .6s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:10px;color:#fff;font-weight:700;min-width:24px}
+.area-bar-fill.ai{background:linear-gradient(90deg,#4361ee,#6c8cff)}
+.area-bar-fill.aging{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.area-bar-fill.env{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.area-bar-fill.global{background:linear-gradient(90deg,#a855f7,#c084fc)}
+
+.empty-state{text-align:center;padding:20px;color:var(--dim);font-size:13px}
+.action-buttons{display:flex;gap:8px;margin-top:20px;justify-content:center}
+.action-buttons .btn{flex:1;padding:12px 8px;font-size:0.9rem;white-space:nowrap;justify-content:center}
+
+#user-badge{display:none;position:fixed;top:0;left:0;right:0;z-index:999;justify-content:center;gap:8px;padding:6px 16px;background:rgba(255,255,255,.95);border-bottom:1px solid #dde3f0;font-size:12px;backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+#badge-code{color:var(--neon)}#badge-school{color:var(--text)}#badge-nick{color:var(--text)}.badge-dot{color:#dde3f0}
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.fade-in{animation:fadeInUp .4s ease}
+@media(max-width:400px){.option-grid{grid-template-columns:1fr}.module-header h2{font-size:1.3rem}}
+</style>
+</head>
+<body>
+
+<div id="user-badge">
+  <span id="badge-code"></span>
+  <span class="badge-dot">&middot;</span>
+  <span id="badge-school"></span>
+  <span class="badge-dot">&middot;</span>
+  <span id="badge-nick"></span>
+</div>
+
+<div id="entryScreen" class="screen active"></div>
+
+<!-- STEP 1: 연습 -->
+<div id="step1Screen" class="screen">
+    <div class="step-pills"><span class="step-pill active">연습</span><span class="step-pill">도전</span><span class="step-pill">결과</span></div>
+    <div class="progress-bar"><div class="fill" id="prog-step1" style="width:0%"></div></div>
+    <div class="module-header"><div class="icon">⚡</div><h2>직업 변화 스피드 퀴즈 — 연습</h2><p>사회 변화가 직업에 어떤 영향을 미치는지 인과 사슬을 완성하세요!</p></div>
+    <div class="q-counter" id="q-counter-1"></div>
+    <div id="chain-area-1"></div>
+    <div id="options-area-1"></div>
+    <div class="hint-box" id="hint-1"></div>
+    <div class="explain-box" id="explain-1"></div>
+    <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-primary" id="btn-check-1" disabled>정답 확인</button>
+        <button class="btn btn-primary" id="btn-next-1" style="display:none">다음 문제 ➜</button>
+    </div>
+</div>
+
+<!-- Ready screen (연습→도전 전환) -->
+<div id="readyScreen" class="screen">
+    <div class="ready-content">
+        <div class="ready-icon">⏱️</div>
+        <div class="ready-title">타임 어택!</div>
+        <p class="ready-desc">연습은 끝났습니다. 이제 진짜 도전이 시작됩니다!</p>
+        <div class="ready-highlight">⏱️ 60초</div>
+        <p class="ready-desc">제한 시간 안에 최대한 많은 도미노를 완성하세요.<br>정답을 고르면 바로 다음 문제로 넘어갑니다!</p>
+        <div class="ready-tips">
+            <strong>💡 공략 팁</strong><br>
+            • 빈칸 앞뒤의 키워드를 잘 살피세요<br>
+            • 틀려도 괜찮아요 — 바로 다음 문제!<br>
+            • 시간이 촉박할수록 직감을 믿으세요
+        </div>
+        <button class="ready-btn" id="btn-start-challenge" onclick="startChallenge()">🔥 도전 시작!</button>
+    </div>
+</div>
+
+<!-- STEP 2: 도전 (타임어택) -->
+<div id="step2Screen" class="screen">
+    <div class="step-pills"><span class="step-pill done">연습</span><span class="step-pill active">도전</span><span class="step-pill">결과</span></div>
+    <div class="timer-container">
+        <span class="timer-text" id="timer-text">60</span>
+        <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+    </div>
+    <div class="challenge-hud">
+        <div class="hud-item"><div class="hud-label">맞춘 문제</div><div class="hud-value" id="hud-correct">0</div></div>
+        <div class="hud-item"><div class="hud-label">틀린 문제</div><div class="hud-value wrong-val" id="hud-wrong">0</div></div>
+        <div class="hud-item"><div class="hud-label">문제 번호</div><div class="hud-value" id="hud-qnum">1</div></div>
+    </div>
+    <div id="chain-area-2"></div>
+    <div id="options-area-2"></div>
+</div>
+
+<!-- 결과 화면 -->
+<div id="resultScreen" class="screen">
+    <div class="result-tabs">
+        <button class="result-tab active" data-tab="myResult">나의 결과</button>
+        <button class="result-tab" data-tab="groupStats" id="groupStatsTab">우리 반 통계</button>
+        <button class="result-tab" data-tab="globalStats">전체 통계</button>
+    </div>
+    <div id="myResult" class="result-content active"></div>
+    <div id="groupStats" class="result-content"></div>
+    <div id="globalStats" class="result-content"></div>
+</div>
+
+<script src="/d_contents/01/common/common-entry.js"></script>
+<script>
+(function() {
+'use strict';
+
+// ============================================================
+// 문제 데이터
+// ============================================================
+// 구조: { area, chain:[사회변화, 산업/생활변화, 직업변화], blank:0|1|2, options:[정답, 오답1, 오답2, 오답3], explain }
+// options[0]이 항상 정답. 화면에 표시할 때 셔플됨.
+
+// ── 연습 문제 (2개, 고정, 가장 쉽고 명쾌한 인과관계) ──
+var PRACTICE = [
+    {
+        area: 'ai',
+        chain: ['AI 기술 발전', '자동화 로봇 보급 확대', '로봇 정비 기술자 수요 증가'],
+        blank: 1,
+        options: ['자동화 로봇 보급 확대', '해외여행 증가', '고령 인구 증가', '친환경 에너지 전환'],
+        explain: 'AI 기술이 발전하면서 공장·물류 등에서 자동화 로봇이 널리 보급되었고, 이 로봇을 점검·수리하는 정비 기술자가 새롭게 필요해졌습니다.'
+    },
+    {
+        area: 'env',
+        chain: ['기후 위기 심화', '친환경 에너지 산업 성장', '태양광 패널 설치 기술자 등장'],
+        blank: 1,
+        options: ['친환경 에너지 산업 성장', '온라인 쇼핑 증가', '1인 가구 증가', 'AI 번역 기술 발전'],
+        explain: '기후 위기가 심각해지면서 태양광·풍력 같은 친환경 에너지 산업이 빠르게 성장했고, 태양광 패널을 설치하는 전문 기술자가 등장했습니다.'
+    }
+];
+
+// ── 도전 문제 풀 (100개, 랜덤 출제) ──
+var CHALLENGE_POOL = [
+    // ===== AI·자동화 (25개) =====
+    {area:'ai', chain:['AI 기술 발전','챗봇·가상 비서 보급','AI 트레이너 수요 증가'], blank:2, options:['AI 트레이너 수요 증가','통역사 수요 증가','농부 수요 증가','건축가 수요 증가']},
+    {area:'ai', chain:['AI 기술 발전','자율주행 기술 상용화','자율주행 안전 관리자 등장'], blank:1, options:['자율주행 기술 상용화','1인 가구 증가','고령 인구 증가','해외직구 증가']},
+    {area:'ai', chain:['AI 기술 발전','머신러닝 학습 데이터 수요 폭증','데이터 라벨러 등장'], blank:2, options:['데이터 라벨러 등장','도시 농업 매니저 등장','해양 생태 복원가 등장','노인 돌봄사 등장']},
+    {area:'ai', chain:['AI 기술 발전','AI 채용·인사 시스템 도입','AI 윤리 감사관 등장'], blank:1, options:['AI 채용·인사 시스템 도입','원격 진료 확대','재생 에너지 보급','글로벌 물류 확대']},
+    {area:'ai', chain:['AI 기술 발전','딥페이크 기술 확산','디지털 포렌식 전문가 수요 증가'], blank:0, options:['AI 기술 발전','기후 위기 심화','고령화 사회','글로벌화 확대']},
+    {area:'ai', chain:['AI 기술 발전','공장 자동화 확산','산업용 로봇 프로그래머 수요 증가'], blank:2, options:['산업용 로봇 프로그래머 수요 증가','해양 생물학자 수요 증가','전통 요리사 수요 증가','광부 수요 증가']},
+    {area:'ai', chain:['AI 기술 발전','AI 의료 진단 보급','의료 AI 데이터 분석가 등장'], blank:1, options:['AI 의료 진단 보급','탄소 배출 규제 강화','온라인 교육 확대','고령 인구 증가']},
+    {area:'ai', chain:['AI 기술 발전','AI 작곡·작화 도구 보급','AI 콘텐츠 큐레이터 등장'], blank:2, options:['AI 콘텐츠 큐레이터 등장','드론 배달 기사 등장','탄소 거래 중개인 등장','노인 체육 지도사 등장']},
+    {area:'ai', chain:['AI 기술 발전','스마트 팩토리 확산','공정 데이터 엔지니어 수요 증가'], blank:0, options:['AI 기술 발전','글로벌화 확대','기후 위기 심화','저출산 심화']},
+    {area:'ai', chain:['AI 기술 발전','음성 인식 기술 고도화','음성 UX 디자이너 등장'], blank:1, options:['음성 인식 기술 고도화','친환경 포장재 보급','고령 친화 식품 성장','해외 직구 증가']},
+    {area:'ai', chain:['AI 기술 발전','AI 번역 기술 고도화','단순 통역 수요 감소'], blank:2, options:['단순 통역 수요 감소','태양광 기술자 수요 증가','전통 시장 상인 증가','해양 운송 기사 증가']},
+    {area:'ai', chain:['AI 기술 발전','추천 알고리즘 고도화','개인화 마케팅 전문가 수요 증가'], blank:1, options:['추천 알고리즘 고도화','도시 녹화 사업 확대','노인 요양 시설 증가','국제 무역 분쟁 증가']},
+    {area:'ai', chain:['AI 기술 발전','무인 매장 확산','매장 운영 시스템 관리자 등장'], blank:2, options:['매장 운영 시스템 관리자 등장','도시 농업 매니저 등장','돌봄 로봇 관리사 등장','탄소 거래 중개인 등장']},
+    {area:'ai', chain:['AI 기술 발전','생성형 AI 보급','프롬프트 엔지니어 등장'], blank:2, options:['프롬프트 엔지니어 등장','탄소배출 분석가 등장','돌봄 로봇 관리사 등장','국제 통상 전문가 등장']},
+    {area:'ai', chain:['AI 기술 발전','자동화로 단순 사무직 감소','디지털 전환 컨설턴트 수요 증가'], blank:1, options:['자동화로 단순 사무직 감소','고령 인구 증가','해수면 상승','국제 교류 확대']},
+    {area:'ai', chain:['AI 기술 발전','빅데이터 분석 기술 발전','데이터 사이언티스트 수요 폭증'], blank:0, options:['AI 기술 발전','고령화 사회','기후 위기 심화','글로벌화 확대']},
+    {area:'ai', chain:['AI 기술 발전','AI 기반 법률 검토 도입','리걸 테크 전문가 등장'], blank:1, options:['AI 기반 법률 검토 도입','탄소 배출권 거래 활성화','원격 의료 서비스 확대','글로벌 공급망 재편']},
+    {area:'ai', chain:['AI 기술 발전','스마트홈 기기 보급 확대','IoT 보안 전문가 수요 증가'], blank:2, options:['IoT 보안 전문가 수요 증가','도시 농업 매니저 수요 증가','전통 공예가 수요 증가','해양 목장 관리자 수요 증가']},
+    {area:'ai', chain:['AI 기술 발전','AI 면접 시스템 도입','AI 면접 코치 등장'], blank:0, options:['AI 기술 발전','저출산 심화','기후 위기 심화','국제 분쟁 증가']},
+    {area:'ai', chain:['AI 기술 발전','드론 기술 상용화','드론 조종사 자격 수요 증가'], blank:1, options:['드론 기술 상용화','요양 시설 증가','해수면 상승 대응','국제 무역 확대']},
+    {area:'ai', chain:['AI 기술 발전','AI 보안 위협 증가','사이버 보안 전문가 수요 폭증'], blank:2, options:['사이버 보안 전문가 수요 폭증','전통 어부 수요 증가','도시 농장 관리자 수요 증가','관광 가이드 수요 증가']},
+    {area:'ai', chain:['AI 기술 발전','맞춤형 교육 AI 보급','에듀테크 콘텐츠 개발자 등장'], blank:1, options:['맞춤형 교육 AI 보급','친환경 포장재 확산','노인 복지 확대','해외 이민 증가']},
+    {area:'ai', chain:['AI 기술 발전','로봇 배달 서비스 확산','라스트마일 물류 관리자 등장'], blank:2, options:['라스트마일 물류 관리자 등장','해양 환경 감시원 등장','노인 레크리에이션 지도사 등장','국제 무역 중개인 등장']},
+    {area:'ai', chain:['AI 기술 발전','AI 금융 분석 도입','알고리즘 트레이딩 감독관 등장'], blank:0, options:['AI 기술 발전','고령화 사회','기후 위기 심화','글로벌화 확대']},
+    {area:'ai', chain:['AI 기술 발전','가상현실(VR) 기술 발전','VR 콘텐츠 크리에이터 수요 증가'], blank:1, options:['가상현실(VR) 기술 발전','탄소 배출 규제 강화','고령 친화 도시 설계','국제 난민 증가']},
+
+    // ===== 고령화 (25개) =====
+    {area:'aging', chain:['고령화 사회','요양·돌봄 산업 성장','돌봄 로봇 관리사 등장'], blank:2, options:['돌봄 로봇 관리사 등장','드론 조종사 등장','태양광 기술자 등장','AI 트레이너 등장']},
+    {area:'aging', chain:['고령화 사회','실버 식품 시장 성장','고령 친화 식품 개발자 등장'], blank:1, options:['실버 식품 시장 성장','자율주행 기술 발전','탄소 배출 규제 강화','해외직구 증가']},
+    {area:'aging', chain:['고령화 사회','노인 의료비 급증','원격 건강 모니터링 전문가 등장'], blank:2, options:['원격 건강 모니터링 전문가 등장','데이터 라벨러 등장','도시 농업 매니저 등장','국제 통상 전문가 등장']},
+    {area:'aging', chain:['고령화 사회','노인 1인 가구 증가','독거노인 안부 확인 서비스 종사자 수요 증가'], blank:0, options:['고령화 사회','AI 기술 발전','기후 위기 심화','글로벌화 확대']},
+    {area:'aging', chain:['고령화 사회','실버 여가 산업 성장','노인 레크리에이션 지도사 수요 증가'], blank:1, options:['실버 여가 산업 성장','드론 기술 발전','해수면 상승','국제 교류 확대']},
+    {area:'aging', chain:['고령화 사회','노인 운전 사고 증가','고령자 이동 지원 서비스 종사자 수요 증가'], blank:2, options:['고령자 이동 지원 서비스 종사자 수요 증가','프롬프트 엔지니어 수요 증가','탄소 거래 중개인 수요 증가','VR 크리에이터 수요 증가']},
+    {area:'aging', chain:['고령화 사회','치매 환자 수 증가','치매 예방 프로그램 전문가 등장'], blank:1, options:['치매 환자 수 증가','온라인 쇼핑 증가','친환경 포장 확산','해외 이민 증가']},
+    {area:'aging', chain:['고령화 사회','생산 가능 인구 감소','자동화 시스템 도입 가속'], blank:0, options:['고령화 사회','AI 기술 발전','기후 위기 심화','글로벌화 확대']},
+    {area:'aging', chain:['고령화 사회','노인 디지털 소외 심화','디지털 리터러시 교육 강사 수요 증가'], blank:1, options:['노인 디지털 소외 심화','AI 작곡 도구 보급','탄소중립 정책 강화','국제 물류 확대']},
+    {area:'aging', chain:['고령화 사회','실버 주거 시장 확대','고령 친화 주거 설계사 등장'], blank:2, options:['고령 친화 주거 설계사 등장','데이터 사이언티스트 등장','해양 에너지 기술자 등장','글로벌 마케터 등장']},
+    {area:'aging', chain:['고령화 사회','노인 대상 금융 사기 증가','시니어 금융 상담사 수요 증가'], blank:1, options:['노인 대상 금융 사기 증가','AI 번역 기술 발전','해수면 상승 대응','국제 무역 확대']},
+    {area:'aging', chain:['고령화 사회','노인 체력 관리 수요 증가','실버 피트니스 트레이너 등장'], blank:2, options:['실버 피트니스 트레이너 등장','프롬프트 엔지니어 등장','탄소배출 분석가 등장','국제 물류 관리자 등장']},
+    {area:'aging', chain:['고령화 사회','실버 관광 시장 성장','시니어 맞춤 여행 설계사 등장'], blank:0, options:['고령화 사회','AI 기술 발전','기후 위기 심화','글로벌화 확대']},
+    {area:'aging', chain:['고령화 사회','재활·보조기기 수요 증가','재활 보조기기 전문가 등장'], blank:1, options:['재활·보조기기 수요 증가','메타버스 플랫폼 성장','친환경 에너지 전환','국제 문화 교류 확대']},
+    {area:'aging', chain:['고령화 사회','장례·추모 산업 성장','장례 기획 전문가 수요 증가'], blank:2, options:['장례 기획 전문가 수요 증가','AI 트레이너 수요 증가','해양 환경 감시원 수요 증가','무역 분쟁 전문가 수요 증가']},
+    {area:'aging', chain:['저출산 심화','노동력 부족 심화','외국인 근로자 지원 전문가 수요 증가'], blank:0, options:['저출산 심화','AI 기술 발전','기후 위기 심화','글로벌화 확대']},
+    {area:'aging', chain:['고령화 사회','은퇴 후 재취업 수요 증가','시니어 커리어 코치 등장'], blank:1, options:['은퇴 후 재취업 수요 증가','드론 배달 확산','해수면 상승','국제 분쟁 증가']},
+    {area:'aging', chain:['고령화 사회','노인 우울증 증가','노인 심리 상담사 수요 증가'], blank:2, options:['노인 심리 상담사 수요 증가','VR 크리에이터 수요 증가','도시 농장 관리자 수요 증가','국제 마케터 수요 증가']},
+    {area:'aging', chain:['고령화 사회','고령 소비자 증가','유니버설 디자인 전문가 수요 증가'], blank:1, options:['고령 소비자 증가','자율주행 확산','탄소 배출권 도입','해외 이민 증가']},
+    {area:'aging', chain:['고령화 사회','만성 질환자 증가','만성 질환 관리 코디네이터 등장'], blank:0, options:['고령화 사회','AI 기술 발전','기후 위기 심화','글로벌화 확대']},
+    {area:'aging', chain:['고령화 사회','노인 맞춤 콘텐츠 수요 증가','시니어 미디어 기획자 등장'], blank:2, options:['시니어 미디어 기획자 등장','데이터 라벨러 등장','탄소 거래 중개인 등장','해외 물류 전문가 등장']},
+    {area:'aging', chain:['고령화 사회','간병 인력 부족','간병 로봇 개발자 수요 증가'], blank:1, options:['간병 인력 부족','해외직구 증가','친환경 에너지 보급','메타버스 확산']},
+    {area:'aging', chain:['저출산 심화','학교 수 감소','폐교 활용 기획 전문가 등장'], blank:1, options:['학교 수 감소','AI 보안 위협 증가','해수면 상승','국제 무역 확대']},
+    {area:'aging', chain:['고령화 사회','노인 보이스피싱 피해 증가','시니어 디지털 안전 교육가 등장'], blank:2, options:['시니어 디지털 안전 교육가 등장','프롬프트 엔지니어 등장','해양 목장 관리자 등장','글로벌 물류 전문가 등장']},
+    {area:'aging', chain:['고령화 사회','펫 산업 성장','반려동물 행동 전문가 수요 증가'], blank:1, options:['펫 산업 성장','드론 기술 상용화','탄소 배출 규제 강화','국제 교류 확대']},
+
+    // ===== 환경·기후 (25개) =====
+    {area:'env', chain:['기후 위기 심화','탄소 배출 규제 강화','탄소배출 분석가 등장'], blank:2, options:['탄소배출 분석가 등장','AI 트레이너 등장','돌봄 로봇 관리사 등장','국제 통상 전문가 등장']},
+    {area:'env', chain:['기후 위기 심화','이상 기후 빈발','기상 데이터 분석가 수요 증가'], blank:1, options:['이상 기후 빈발','AI 챗봇 보급','노인 인구 증가','해외직구 증가']},
+    {area:'env', chain:['기후 위기 심화','전기차 시장 급성장','전기차 배터리 엔지니어 수요 증가'], blank:0, options:['기후 위기 심화','AI 기술 발전','고령화 사회','글로벌화 확대']},
+    {area:'env', chain:['기후 위기 심화','식량 안보 위기','도시 농업 매니저 등장'], blank:1, options:['식량 안보 위기','자율주행 기술 발전','노인 1인 가구 증가','메타버스 확산']},
+    {area:'env', chain:['기후 위기 심화','해수면 상승','해안 방재 엔지니어 수요 증가'], blank:2, options:['해안 방재 엔지니어 수요 증가','AI 윤리 감사관 수요 증가','노인 돌봄사 수요 증가','국제 마케터 수요 증가']},
+    {area:'env', chain:['기후 위기 심화','탄소중립 정책 확산','탄소 거래 중개인 등장'], blank:1, options:['탄소중립 정책 확산','AI 의료 진단 보급','실버 식품 시장 성장','국제 물류 확대']},
+    {area:'env', chain:['기후 위기 심화','미세먼지·대기오염 심화','공기 질 관리 전문가 등장'], blank:2, options:['공기 질 관리 전문가 등장','데이터 라벨러 등장','시니어 피트니스 트레이너 등장','글로벌 마케터 등장']},
+    {area:'env', chain:['기후 위기 심화','재활용·순환 경제 확대','폐기물 자원화 전문가 등장'], blank:0, options:['기후 위기 심화','AI 기술 발전','고령화 사회','글로벌화 확대']},
+    {area:'env', chain:['기후 위기 심화','친환경 건축 수요 증가','그린 빌딩 인증 컨설턴트 등장'], blank:1, options:['친환경 건축 수요 증가','AI 면접 시스템 도입','노인 운전 사고 증가','국제 분쟁 증가']},
+    {area:'env', chain:['기후 위기 심화','해양 생태계 파괴','해양 생태 복원 전문가 수요 증가'], blank:2, options:['해양 생태 복원 전문가 수요 증가','프롬프트 엔지니어 수요 증가','간병 인력 수요 증가','무역 분쟁 전문가 수요 증가']},
+    {area:'env', chain:['기후 위기 심화','물 부족 심화','수자원 관리 전문가 수요 증가'], blank:1, options:['물 부족 심화','스마트홈 기기 보급','은퇴 후 재취업 증가','해외 이민 증가']},
+    {area:'env', chain:['기후 위기 심화','산불 빈도 증가','산림 방재 드론 운영자 등장'], blank:0, options:['기후 위기 심화','AI 기술 발전','고령화 사회','글로벌화 확대']},
+    {area:'env', chain:['기후 위기 심화','친환경 포장재 수요 증가','지속 가능 패키지 디자이너 등장'], blank:2, options:['지속 가능 패키지 디자이너 등장','AI 콘텐츠 큐레이터 등장','노인 심리 상담사 등장','국제 물류 관리자 등장']},
+    {area:'env', chain:['기후 위기 심화','ESG 경영 확산','ESG 컨설턴트 수요 증가'], blank:1, options:['ESG 경영 확산','AI 작곡 도구 보급','치매 환자 수 증가','글로벌 공급망 재편']},
+    {area:'env', chain:['기후 위기 심화','풍력 발전 확대','풍력 터빈 기술자 수요 증가'], blank:2, options:['풍력 터빈 기술자 수요 증가','데이터 사이언티스트 수요 증가','돌봄 로봇 관리사 수요 증가','국제 통상 전문가 수요 증가']},
+    {area:'env', chain:['기후 위기 심화','폭염·한파 빈발','기후 적응 도시 설계사 등장'], blank:0, options:['기후 위기 심화','AI 기술 발전','고령화 사회','글로벌화 확대']},
+    {area:'env', chain:['기후 위기 심화','친환경 교통 수요 증가','전동 킥보드·자전거 관리 기술자 등장'], blank:1, options:['친환경 교통 수요 증가','AI 보안 위협 증가','노인 디지털 소외 심화','해외 직구 증가']},
+    {area:'env', chain:['기후 위기 심화','생물 다양성 감소','생태계 모니터링 전문가 등장'], blank:2, options:['생태계 모니터링 전문가 등장','AI 트레이너 등장','시니어 커리어 코치 등장','해외 물류 전문가 등장']},
+    {area:'env', chain:['기후 위기 심화','친환경 농업 확산','유기농 인증 심사관 수요 증가'], blank:1, options:['친환경 농업 확산','무인 매장 확산','간병 인력 부족','국제 교류 확대']},
+    {area:'env', chain:['기후 위기 심화','수소 에너지 개발 가속','수소 충전소 운영 기술자 등장'], blank:0, options:['기후 위기 심화','AI 기술 발전','고령화 사회','글로벌화 확대']},
+    {area:'env', chain:['기후 위기 심화','플라스틱 규제 강화','대체 소재 연구원 수요 증가'], blank:1, options:['플라스틱 규제 강화','AI 금융 분석 도입','노인 우울증 증가','국제 무역 분쟁 증가']},
+    {area:'env', chain:['기후 위기 심화','탄소 포집 기술 개발','탄소 포집 시설 운영자 등장'], blank:2, options:['탄소 포집 시설 운영자 등장','VR 콘텐츠 크리에이터 등장','노인 레크리에이션 지도사 등장','글로벌 마케터 등장']},
+    {area:'env', chain:['기후 위기 심화','친환경 패션 시장 성장','지속 가능 패션 디자이너 등장'], blank:1, options:['친환경 패션 시장 성장','챗봇 보급 확대','고령 소비자 증가','해외여행 증가']},
+    {area:'env', chain:['기후 위기 심화','도시 열섬 현상 심화','도시 녹화 전문가 수요 증가'], blank:2, options:['도시 녹화 전문가 수요 증가','AI 면접 코치 수요 증가','장례 기획 전문가 수요 증가','국제 통상 전문가 수요 증가']},
+    {area:'env', chain:['기후 위기 심화','자연재해 피해 증가','재난 복구 전문가 수요 증가'], blank:0, options:['기후 위기 심화','AI 기술 발전','고령화 사회','글로벌화 확대']},
+
+    // ===== 글로벌화 (25개) =====
+    {area:'global', chain:['글로벌화 확대','해외직구 시장 성장','국제 물류 전문가 수요 증가'], blank:2, options:['국제 물류 전문가 수요 증가','AI 트레이너 수요 증가','노인 돌봄사 수요 증가','태양광 기술자 수요 증가']},
+    {area:'global', chain:['글로벌화 확대','다문화 가정 증가','다문화 사회 통합 전문가 등장'], blank:1, options:['다문화 가정 증가','AI 의료 진단 보급','탄소 배출 규제 강화','노인 인구 증가']},
+    {area:'global', chain:['글로벌화 확대','국제 사이버 범죄 증가','글로벌 사이버 수사관 수요 증가'], blank:0, options:['글로벌화 확대','AI 기술 발전','기후 위기 심화','고령화 사회']},
+    {area:'global', chain:['글로벌화 확대','글로벌 공급망 복잡화','공급망 리스크 관리자 등장'], blank:1, options:['글로벌 공급망 복잡화','자율주행 기술 발전','고령 친화 식품 성장','해수면 상승']},
+    {area:'global', chain:['글로벌화 확대','외국인 관광객 증가','관광 통역 안내사 수요 증가'], blank:2, options:['관광 통역 안내사 수요 증가','데이터 라벨러 수요 증가','돌봄 로봇 관리사 수요 증가','탄소배출 분석가 수요 증가']},
+    {area:'global', chain:['글로벌화 확대','한류 콘텐츠 수출 증가','K-콘텐츠 로컬라이제이션 전문가 등장'], blank:1, options:['한류 콘텐츠 수출 증가','무인 매장 확산','치매 환자 증가','친환경 건축 확대']},
+    {area:'global', chain:['글로벌화 확대','국제 무역 분쟁 증가','통상 전문 변호사 수요 증가'], blank:0, options:['글로벌화 확대','AI 기술 발전','기후 위기 심화','고령화 사회']},
+    {area:'global', chain:['글로벌화 확대','글로벌 원격 근무 확산','분산 팀 매니저 수요 증가'], blank:1, options:['글로벌 원격 근무 확산','AI 챗봇 보급','노인 운전 사고 증가','산불 빈도 증가']},
+    {area:'global', chain:['글로벌화 확대','외국인 근로자 유입 증가','이민·비자 전문 행정사 수요 증가'], blank:2, options:['이민·비자 전문 행정사 수요 증가','프롬프트 엔지니어 수요 증가','해양 생태 복원가 수요 증가','실버 피트니스 트레이너 수요 증가']},
+    {area:'global', chain:['글로벌화 확대','글로벌 전자상거래 확대','크로스보더 이커머스 전문가 등장'], blank:0, options:['글로벌화 확대','AI 기술 발전','기후 위기 심화','고령화 사회']},
+    {area:'global', chain:['글로벌화 확대','해외 유학·교환학생 증가','유학 컨설턴트 수요 증가'], blank:1, options:['해외 유학·교환학생 증가','스마트 팩토리 확산','노인 디지털 소외 심화','탄소중립 정책 확산']},
+    {area:'global', chain:['글로벌화 확대','식문화 다양화','푸드 스타일리스트 수요 증가'], blank:2, options:['푸드 스타일리스트 수요 증가','데이터 사이언티스트 수요 증가','간병 로봇 개발자 수요 증가','풍력 터빈 기술자 수요 증가']},
+    {area:'global', chain:['글로벌화 확대','국제 감염병 위험 증가','감염병 역학 조사관 수요 증가'], blank:1, options:['국제 감염병 위험 증가','AI 작곡 도구 보급','은퇴 후 재취업 증가','친환경 포장재 확산']},
+    {area:'global', chain:['글로벌화 확대','글로벌 브랜드 경쟁 심화','글로벌 마케팅 전략가 수요 증가'], blank:0, options:['글로벌화 확대','AI 기술 발전','기후 위기 심화','고령화 사회']},
+    {area:'global', chain:['글로벌화 확대','국제 데이터 규제 다양화','글로벌 데이터 컴플라이언스 전문가 등장'], blank:1, options:['국제 데이터 규제 다양화','AI 보안 위협 증가','고령 소비자 증가','해양 생태계 파괴']},
+    {area:'global', chain:['글로벌화 확대','국경 간 금융 거래 증가','핀테크 규제 전문가 등장'], blank:2, options:['핀테크 규제 전문가 등장','AI 윤리 감사관 등장','노인 심리 상담사 등장','도시 농업 매니저 등장']},
+    {area:'global', chain:['글로벌화 확대','국제 스포츠 이벤트 증가','스포츠 이벤트 기획자 수요 증가'], blank:1, options:['국제 스포츠 이벤트 증가','맞춤형 교육 AI 보급','노인 우울증 증가','플라스틱 규제 강화']},
+    {area:'global', chain:['글로벌화 확대','다국어 콘텐츠 수요 증가','로컬라이제이션 전문가 수요 증가'], blank:0, options:['글로벌화 확대','AI 기술 발전','기후 위기 심화','고령화 사회']},
+    {area:'global', chain:['글로벌화 확대','국제 환경 협약 강화','탄소 국경세 전문가 등장'], blank:1, options:['국제 환경 협약 강화','드론 기술 상용화','치매 환자 수 증가','도시 열섬 현상']},
+    {area:'global', chain:['글로벌화 확대','해외 의료 관광 증가','의료 관광 코디네이터 수요 증가'], blank:2, options:['의료 관광 코디네이터 수요 증가','매장 운영 시스템 관리자 수요 증가','폐교 활용 기획자 수요 증가','ESG 컨설턴트 수요 증가']},
+    {area:'global', chain:['글로벌화 확대','글로벌 인재 경쟁 심화','헤드헌터 수요 증가'], blank:1, options:['글로벌 인재 경쟁 심화','AI 금융 분석 도입','간병 인력 부족','생물 다양성 감소']},
+    {area:'global', chain:['글로벌화 확대','국제 특허 분쟁 증가','국제 특허 전문 변리사 수요 증가'], blank:0, options:['글로벌화 확대','AI 기술 발전','기후 위기 심화','고령화 사회']},
+    {area:'global', chain:['글로벌화 확대','글로벌 ESG 공시 의무화','ESG 보고서 작성 전문가 등장'], blank:2, options:['ESG 보고서 작성 전문가 등장','음성 UX 디자이너 등장','시니어 미디어 기획자 등장','탄소 포집 시설 운영자 등장']},
+    {area:'global', chain:['글로벌화 확대','해외 진출 기업 증가','현지화 전략 컨설턴트 수요 증가'], blank:1, options:['해외 진출 기업 증가','로봇 배달 서비스 확산','노인 보이스피싱 증가','친환경 농업 확산']},
+    {area:'global', chain:['글로벌화 확대','국제 개발 협력 확대','국제 개발 협력 전문가 수요 증가'], blank:2, options:['국제 개발 협력 전문가 수요 증가','IoT 보안 전문가 수요 증가','재활 보조기기 전문가 수요 증가','수자원 관리 전문가 수요 증가']}
+];
+
+// ============================================================
+// 유틸리티
+// ============================================================
+function shuffleArray(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+}
+
+// ============================================================
+// 게임 상태
+// ============================================================
+var TOTAL_TIME = 60; // 도전 제한 시간(초)
+var state = {
+    practiceIdx: 0,
+    practiceCorrect: 0,
+    practiceHintUsed: 0,
+    // 도전
+    challengeQuestions: [],
+    challengeIdx: 0,
+    challengeCorrect: 0,
+    challengeWrong: 0,
+    challengeAreaResults: {ai:{c:0,t:0}, aging:{c:0,t:0}, env:{c:0,t:0}, global:{c:0,t:0}},
+    timeLeft: TOTAL_TIME,
+    timerId: null,
+    // 선택
+    selected: -1
+};
+
+// ============================================================
+// 초기화
+// ============================================================
+EoEntry.init({
+    activityId: 'job_change_quiz',
+    title: '⚡ 직업 변화 스피드 퀴즈',
+    subtitle: '사회 변화가 직업에 미치는 영향을 인과 사슬로 추적하세요!',
+    onStart: function() {
+        startPractice();
+    }
+});
+
+// ============================================================
+// STEP 1: 연습
+// ============================================================
+function startPractice() {
+    EoEntry.showScreen('step1');
+    state.practiceIdx = 0;
+    state.practiceCorrect = 0;
+    state.practiceHintUsed = 0;
+    renderPractice();
+}
+
+function renderPractice() {
+    var q = PRACTICE[state.practiceIdx];
+    var counter = document.getElementById('q-counter-1');
+    var chainArea = document.getElementById('chain-area-1');
+    var optArea = document.getElementById('options-area-1');
+    var hintBox = document.getElementById('hint-1');
+    var explainBox = document.getElementById('explain-1');
+    var checkBtn = document.getElementById('btn-check-1');
+    var nextBtn = document.getElementById('btn-next-1');
+    var progBar = document.getElementById('prog-step1');
+
+    state.selected = -1;
+    hintBox.style.display = 'none';
+    explainBox.style.display = 'none';
+    checkBtn.style.display = '';
+    checkBtn.disabled = true;
+    nextBtn.style.display = 'none';
+
+    counter.textContent = (state.practiceIdx + 1) + ' / ' + PRACTICE.length;
+    progBar.style.width = (state.practiceIdx / PRACTICE.length * 50) + '%';
+
+    // Build chain
+    var labels = ['사회 변화', '산업/생활 변화', '직업 변화'];
+    var html = '<div class="domino-chain fade-in">';
+    for (var i = 0; i < 3; i++) {
+        html += '<div class="domino-label">' + labels[i] + '</div>';
+        if (i === q.blank) {
+            html += '<div class="domino-node blank active-slot" id="practice-slot">빈칸을 채우세요</div>';
+        } else {
+            html += '<div class="domino-node filled">' + q.chain[i] + '</div>';
+        }
+        if (i < 2) html += '<div class="domino-arrow">⬇</div>';
+    }
+    html += '</div>';
+    chainArea.innerHTML = html;
+
+    // Build options (shuffle)
+    var opts = q.options.map(function(text, idx) { return {text: text, origIdx: idx}; });
+    shuffleArray(opts);
+
+    var optHtml = '<div class="option-grid">';
+    opts.forEach(function(opt) {
+        optHtml += '<div class="option-card" data-orig="' + opt.origIdx + '">' + opt.text + '</div>';
+    });
+    optHtml += '</div>';
+    optArea.innerHTML = optHtml;
+
+    // Option click
+    optArea.querySelectorAll('.option-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+            if (this.classList.contains('disabled')) return;
+            var origIdx = parseInt(this.getAttribute('data-orig'));
+            state.selected = origIdx;
+            // Highlight
+            optArea.querySelectorAll('.option-card').forEach(function(c) { c.classList.remove('selected'); });
+            this.classList.add('selected');
+            // Fill slot
+            var slot = document.getElementById('practice-slot');
+            slot.textContent = q.options[origIdx];
+            slot.classList.remove('wrong');
+            checkBtn.disabled = false;
+        });
+    });
+
+    // Check button
+    checkBtn.onclick = function() {
+        if (state.selected < 0) return;
+        var slot = document.getElementById('practice-slot');
+        var isCorrect = (state.selected === 0);
+
+        // Disable options
+        optArea.querySelectorAll('.option-card').forEach(function(c) { c.classList.add('disabled'); });
+        checkBtn.style.display = 'none';
+
+        if (isCorrect) {
+            slot.classList.add('correct');
+            slot.classList.remove('active-slot');
+            state.practiceCorrect++;
+            // Show correct option
+            optArea.querySelectorAll('.option-card').forEach(function(c) {
+                if (parseInt(c.getAttribute('data-orig')) === 0) c.classList.add('correct-reveal');
+                else c.classList.add('wrong-reveal');
+            });
+        } else {
+            slot.classList.add('wrong');
+            slot.classList.remove('active-slot');
+            // Show hint
+            hintBox.innerHTML = '<span class="hint-label">💡 힌트:</span> 정답은 <strong>' + q.options[0] + '</strong>입니다.';
+            hintBox.style.display = 'block';
+            state.practiceHintUsed++;
+            // Show correct
+            optArea.querySelectorAll('.option-card').forEach(function(c) {
+                if (parseInt(c.getAttribute('data-orig')) === 0) c.classList.add('correct-reveal');
+                else c.classList.add('wrong-reveal');
+            });
+            // Update slot with correct answer
+            setTimeout(function() {
+                slot.textContent = q.options[0];
+                slot.classList.remove('wrong');
+                slot.classList.add('correct');
+            }, 800);
+        }
+
+        // Show explanation
+        explainBox.innerHTML = '✅ ' + q.explain;
+        explainBox.style.display = 'block';
+
+        // Show next
+        nextBtn.style.display = '';
+        if (state.practiceIdx < PRACTICE.length - 1) {
+            nextBtn.textContent = '다음 문제 ➜';
+        } else {
+            nextBtn.textContent = '🔥 도전 준비 ➜';
+        }
+    };
+
+    // Next button
+    nextBtn.onclick = function() {
+        state.practiceIdx++;
+        if (state.practiceIdx < PRACTICE.length) {
+            renderPractice();
+        } else {
+            // Go to ready screen
+            EoEntry.showScreen('ready');
+        }
+    };
+}
+
+// ============================================================
+// Ready screen → 도전 시작
+// ============================================================
+window.startChallenge = function() {
+    // Prepare challenge questions (shuffle pool, exclude practice)
+    state.challengeQuestions = shuffleArray(CHALLENGE_POOL.slice());
+    state.challengeIdx = 0;
+    state.challengeCorrect = 0;
+    state.challengeWrong = 0;
+    state.challengeAreaResults = {ai:{c:0,t:0}, aging:{c:0,t:0}, env:{c:0,t:0}, global:{c:0,t:0}};
+    state.timeLeft = TOTAL_TIME;
+
+    EoEntry.showScreen('step2');
+    renderChallengeQuestion();
+    startTimer();
+};
+
+// ============================================================
+// STEP 2: 도전 (타임어택)
+// ============================================================
+function startTimer() {
+    var timerFill = document.getElementById('timer-fill');
+    var timerText = document.getElementById('timer-text');
+
+    state.timerId = setInterval(function() {
+        state.timeLeft -= 0.1;
+        if (state.timeLeft <= 0) {
+            state.timeLeft = 0;
+            clearInterval(state.timerId);
+            endChallenge();
+        }
+        var pct = (state.timeLeft / TOTAL_TIME) * 100;
+        timerFill.style.width = pct + '%';
+        timerText.textContent = Math.ceil(state.timeLeft);
+
+        // Color changes
+        timerFill.classList.remove('warning', 'danger');
+        timerText.classList.remove('warning', 'danger');
+        if (state.timeLeft <= 10) {
+            timerFill.classList.add('danger');
+            timerText.classList.add('danger');
+        } else if (state.timeLeft <= 20) {
+            timerFill.classList.add('warning');
+            timerText.classList.add('warning');
+        }
+    }, 100);
+}
+
+function renderChallengeQuestion() {
+    if (state.challengeIdx >= state.challengeQuestions.length) {
+        // All questions exhausted
+        clearInterval(state.timerId);
+        endChallenge();
+        return;
+    }
+
+    var q = state.challengeQuestions[state.challengeIdx];
+    var chainArea = document.getElementById('chain-area-2');
+    var optArea = document.getElementById('options-area-2');
+
+    document.getElementById('hud-correct').textContent = state.challengeCorrect;
+    document.getElementById('hud-wrong').textContent = state.challengeWrong;
+    document.getElementById('hud-qnum').textContent = state.challengeIdx + 1;
+
+    // Build chain
+    var labels = ['사회 변화', '산업/생활 변화', '직업 변화'];
+    var html = '<div class="domino-chain fade-in">';
+    for (var i = 0; i < 3; i++) {
+        html += '<div class="domino-label">' + labels[i] + '</div>';
+        if (i === q.blank) {
+            html += '<div class="domino-node blank active-slot" id="challenge-slot">?</div>';
+        } else {
+            html += '<div class="domino-node filled">' + q.chain[i] + '</div>';
+        }
+        if (i < 2) html += '<div class="domino-arrow">⬇</div>';
+    }
+    html += '</div>';
+    chainArea.innerHTML = html;
+
+    // Build options (shuffle)
+    var opts = q.options.map(function(text, idx) { return {text: text, origIdx: idx}; });
+    shuffleArray(opts);
+
+    var optHtml = '<div class="option-grid">';
+    opts.forEach(function(opt) {
+        optHtml += '<div class="option-card" data-orig="' + opt.origIdx + '">' + opt.text + '</div>';
+    });
+    optHtml += '</div>';
+    optArea.innerHTML = optHtml;
+
+    // Option click — immediate feedback, then next question
+    optArea.querySelectorAll('.option-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+            if (this.classList.contains('disabled')) return;
+            var origIdx = parseInt(this.getAttribute('data-orig'));
+            var isCorrect = (origIdx === 0);
+            var slot = document.getElementById('challenge-slot');
+
+            // Disable all cards
+            optArea.querySelectorAll('.option-card').forEach(function(c) { c.classList.add('disabled'); });
+
+            // Track results
+            state.challengeAreaResults[q.area].t++;
+
+            if (isCorrect) {
+                state.challengeCorrect++;
+                state.challengeAreaResults[q.area].c++;
+                slot.textContent = q.options[0];
+                slot.classList.add('correct');
+                slot.classList.remove('active-slot');
+                this.classList.add('correct-reveal');
+                // Flash
+                document.getElementById('step2Screen').classList.add('flash-correct');
+                setTimeout(function() { document.getElementById('step2Screen').classList.remove('flash-correct'); }, 400);
+            } else {
+                state.challengeWrong++;
+                slot.textContent = q.options[0];
+                slot.classList.add('wrong');
+                slot.classList.remove('active-slot');
+                this.classList.add('wrong-reveal');
+                // Show correct
+                optArea.querySelectorAll('.option-card').forEach(function(c) {
+                    if (parseInt(c.getAttribute('data-orig')) === 0) c.classList.add('correct-reveal');
+                });
+                // 빨간 배경 플래시 제거 — 오답 시 바로 다음 문제로 넘어감
+            }
+
+            // Update HUD
+            document.getElementById('hud-correct').textContent = state.challengeCorrect;
+            document.getElementById('hud-wrong').textContent = state.challengeWrong;
+
+            // Next question after brief pause
+            setTimeout(function() {
+                state.challengeIdx++;
+                renderChallengeQuestion();
+            }, 600);
+        });
+    });
+}
+
+function endChallenge() {
+    clearInterval(state.timerId);
+
+    // Show time-up overlay
+    var totalAttempted = state.challengeCorrect + state.challengeWrong;
+    var overlay = document.createElement('div');
+    overlay.className = 'timeup-overlay';
+    overlay.innerHTML = '<div class="timeup-card">' +
+        '<div class="timeup-icon">⏰</div>' +
+        '<div class="timeup-title">타임 오버!</div>' +
+        '<div class="timeup-score">' + state.challengeCorrect + '문제</div>' +
+        '<div class="timeup-detail">' + totalAttempted + '문제 도전, ' + state.challengeCorrect + '문제 정답</div>' +
+        '<button class="btn btn-primary" onclick="showResult()" style="width:100%">결과 보기 ➜</button>' +
+        '</div>';
+    document.body.appendChild(overlay);
+}
+
+// ============================================================
+// 결과 화면
+// ============================================================
+window.showResult = function() {
+    // Remove overlay
+    var overlay = document.querySelector('.timeup-overlay');
+    if (overlay) overlay.remove();
+
+    EoEntry.showScreen('result');
+
+    // Tab logic
+    EoEntry.setupResultTabs();
+
+    // Hide group tab if solo
+    if (EoEntry.state.mode !== 'group') {
+        var groupTab = document.getElementById('groupStatsTab');
+        if (groupTab) groupTab.style.display = 'none';
+    }
+
+    // Render my result
+    renderMyResult();
+
+    // Load stats
+    loadGroupStats();
+    loadGlobalStats();
+};
+
+function renderMyResult() {
+    var totalAttempted = state.challengeCorrect + state.challengeWrong;
+    var pct = totalAttempted > 0 ? Math.round((state.challengeCorrect / totalAttempted) * 100) : 0;
+
+    var areaNames = {ai:'AI·자동화', aging:'고령화', env:'환경·기후', global:'글로벌화'};
+    var areas = state.challengeAreaResults;
+
+    var html = '<div class="result-card"><div class="result-score">' +
+        '<div class="result-score-number">' + state.challengeCorrect + '문제</div>' +
+        '<div class="result-score-label">60초 동안 맞춘 문제 수</div></div></div>';
+
+    html += '<div class="result-card"><div class="result-section-title">📊 도전 성적</div>';
+    html += '<div class="result-stat-item"><span class="result-stat-label">도전한 문제</span><span class="result-stat-value">' + totalAttempted + '문제</span></div>';
+    html += '<div class="result-stat-item"><span class="result-stat-label">정답률</span><span class="result-stat-value">' + pct + '%</span></div>';
+    html += '<div class="result-stat-item"><span class="result-stat-label">연습 결과</span><span class="result-stat-value">' + state.practiceCorrect + '/' + PRACTICE.length + '</span></div>';
+    html += '</div>';
+
+    // Area bars
+    html += '<div class="result-card"><div class="result-section-title">🌐 변화 영역별 정답률</div><div class="area-bars">';
+    var keys = ['ai','aging','env','global'];
+    var bestArea = null, bestPct = -1, worstArea = null, worstPct = 101;
+    for (var i = 0; i < keys.length; i++) {
+        var a = keys[i];
+        var ap = areas[a].t > 0 ? Math.round((areas[a].c / areas[a].t) * 100) : 0;
+        if (areas[a].t > 0) {
+            if (ap > bestPct) { bestPct = ap; bestArea = a; }
+            if (ap < worstPct) { worstPct = ap; worstArea = a; }
+        }
+        html += '<div class="area-bar-item"><span class="area-bar-label">' + areaNames[a] + '</span>' +
+            '<div class="area-bar-track"><div class="area-bar-fill ' + a + '" style="width:' + ap + '%">' +
+            (areas[a].t > 0 ? ap + '%' : '-') + '</div></div></div>';
+    }
+    html += '</div></div>';
+
+    // Analysis
+    if (bestArea) {
+        html += '<div class="result-card"><div class="result-section-title">💬 분석</div>' +
+            '<p style="font-size:0.9rem;line-height:1.7;color:var(--dim)">';
+        if (state.challengeCorrect >= 15) {
+            html += '🎉 놀라운 속도! 60초 안에 <strong style="color:var(--neon)">' + state.challengeCorrect + '문제</strong>를 맞추다니 대단해요!';
+        } else if (state.challengeCorrect >= 10) {
+            html += '👏 훌륭해요! <strong style="color:var(--neon)">' + state.challengeCorrect + '문제</strong>나 맞추셨어요!';
+        } else if (state.challengeCorrect >= 5) {
+            html += '👍 좋은 시작이에요! 사회 변화와 직업의 관계를 잘 파악하고 있어요.';
+        } else {
+            html += '💪 연습하면 더 잘할 수 있어요! 변화의 흐름을 떠올려 보세요.';
+        }
+        if (bestArea && worstArea && bestArea !== worstArea) {
+            html += ' <strong style="color:var(--neon)">' + areaNames[bestArea] + '</strong> 영역이 강하고, ' +
+                '<strong style="color:var(--orange)">' + areaNames[worstArea] + '</strong> 영역은 더 살펴보면 좋겠어요.';
+        }
+        html += '</p></div>';
+    }
+
+    html += '<div class="action-buttons">' +
+        '<button class="btn btn-secondary" onclick="location.reload()">🔄 다시 하기</button>' +
+        '<button class="btn btn-secondary" onclick="history.back()">🏠 처음으로</button></div>';
+
+    document.getElementById('myResult').innerHTML = html;
+
+    // Save result
+    saveResult({
+        challengeCorrect: state.challengeCorrect,
+        challengeWrong: state.challengeWrong,
+        totalAttempted: totalAttempted,
+        percentage: pct,
+        practiceCorrect: state.practiceCorrect,
+        areas: areas
+    });
+}
+
+// ============================================================
+// API: 저장 / 통계
+// ============================================================
+function saveResult(resultData) {
+    var payload = {
+        participant_id: EoEntry.state.participantId,
+        activity_id: 'job_change_quiz',
+        group_id: EoEntry.state.groupId || null,
+        result_data: resultData
+    };
+    fetch(EoEntry.API_BASE + '/result.php?action=submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    }).catch(function(e) { console.error('Save error:', e); });
+}
+
+function loadGroupStats() {
+    var container = document.getElementById('groupStats');
+    if (EoEntry.state.mode !== 'group') {
+        container.innerHTML = '<div class="empty-state">혼자 하기 모드에서는 우리 반 통계를 볼 수 없습니다.</div>';
+        return;
+    }
+    container.innerHTML = '<div class="empty-state">통계 불러오는 중...</div>';
+    fetch(EoEntry.API_BASE + '/result.php?action=group&activity_id=job_change_quiz&group_id=' + EoEntry.state.groupId)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.submitted_count || data.submitted_count === 0) {
+                container.innerHTML = '<div class="empty-state">아직 데이터가 없습니다.</div>';
+                return;
+            }
+            renderDominoStats(container, data, 'group');
+        })
+        .catch(function() {
+            container.innerHTML = '<div class="empty-state">통계를 불러올 수 없습니다.</div>';
+        });
+}
+
+function loadGlobalStats() {
+    var container = document.getElementById('globalStats');
+    container.innerHTML = '<div class="empty-state">통계 불러오는 중...</div>';
+    fetch(EoEntry.API_BASE + '/result.php?action=national&activity_id=job_change_quiz')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.total_participants || data.total_participants === 0) {
+                container.innerHTML = '<div class="empty-state">아직 데이터가 없습니다.</div>';
+                return;
+            }
+            renderDominoStats(container, data, 'national');
+        })
+        .catch(function() {
+            container.innerHTML = '<div class="empty-state">통계를 불러올 수 없습니다.</div>';
+        });
+}
+
+function renderDominoStats(container, data, type) {
+    var areaNames = {ai:'AI·자동화', aging:'고령화', env:'환경·기후', global:'글로벌화'};
+    var count = type === 'group' ? (data.submitted_count || 0) : (data.total_participants || 0);
+    var avgPct = data.avg_percentage || 0;
+    var avgCorrect = data.avg_correct || 0;
+    var areaStats = data.area_stats || {};
+    var label = type === 'group' ? '반 평균 (참여 ' + count + '명)' : '전체 평균 (누적 ' + count + '명)';
+    var areaLabel = type === 'group' ? '🌐 영역별 반 평균 정답률' : '🌐 영역별 전체 평균 정답률';
+    var btnId = type === 'group' ? 'refreshGroupBtn' : 'refreshGlobalBtn';
+    var loadFn = type === 'group' ? 'loadGroupStats' : 'loadGlobalStats';
+
+    var html = '<div class="result-card"><div class="result-score">' +
+        '<div class="result-score-number">' + (avgCorrect > 0 ? avgCorrect + '문제' : avgPct + '%') + '</div>' +
+        '<div class="result-score-label">' + label + '</div></div></div>';
+
+    html += '<div class="result-card"><div class="result-section-title">' + areaLabel + '</div><div class="area-bars">';
+    var keys = ['ai','aging','env','global'];
+    for (var i = 0; i < keys.length; i++) {
+        var ak = keys[i];
+        var ap = (areaStats[ak] && areaStats[ak].total > 0) ? Math.round((areaStats[ak].correct / areaStats[ak].total) * 100) : 0;
+        html += '<div class="area-bar-item"><span class="area-bar-label">' + areaNames[ak] + '</span>' +
+            '<div class="area-bar-track"><div class="area-bar-fill ' + ak + '" style="width:' + ap + '%">' + ap + '%</div></div></div>';
+    }
+    html += '</div></div>';
+    html += '<button class="refresh-btn" id="' + btnId + '" onclick="' + loadFn + '()">새로고침</button>';
+    container.innerHTML = html;
+    EoEntry.refreshCooldown(btnId);
+}
+
+// Make stats functions global for onclick
+window.loadGroupStats = loadGroupStats;
+window.loadGlobalStats = loadGlobalStats;
+
+})();
+</script>
+</body>
+</html>

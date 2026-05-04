@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나를 소개합니다 — 강점 탐색</title>
+<link rel="stylesheet" href="/d_contents/01/common/common-collab.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* === 강점 카드 그리드 === */
+.strength-section-title{font-size:13px;font-weight:700;color:var(--accent);margin:12px 0 8px;display:flex;align-items:center;gap:6px}
+.strength-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.strength-card{
+    padding:10px 14px;border:2px solid var(--border);border-radius:20px;
+    background:var(--card);font-size:13px;font-weight:500;cursor:pointer;
+    transition:all .2s;user-select:none;color:var(--text);text-align:center;
+}
+.strength-card:hover{border-color:var(--accent);background:var(--accent-dim)}
+.strength-card.selected{border-color:var(--accent);background:var(--accent);color:#fff}
+.strength-card.disabled{opacity:.35;pointer-events:none}
+.strength-counter{text-align:center;font-size:14px;color:var(--text-light);margin:8px 0 16px}
+.strength-counter .count{color:var(--accent);font-weight:700;font-size:18px}
+
+/* === Phase 2: 친구 평가 === */
+.eval-target{text-align:center;margin-bottom:16px}
+.eval-target-name{font-family:'Jua',cursive;font-size:28px;color:var(--accent);margin:8px 0}
+.eval-target-label{font-size:14px;color:var(--text-light)}
+.eval-progress{font-size:12px;color:var(--text-light);text-align:center;margin-bottom:12px}
+
+/* === 결과: 조해리의 창 === */
+.johari-header{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:14px;font-weight:700;position:relative}
+.johari-help-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);
+    background:var(--card);font-size:11px;font-weight:700;color:var(--text-light);
+    cursor:pointer;user-select:none;transition:all .2s;flex-shrink:0;
+}
+.johari-help-btn:hover{border-color:var(--accent);color:var(--accent)}
+.johari-tooltip{
+    display:none;position:absolute;top:28px;left:0;right:0;z-index:10;
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;font-size:12px;font-weight:400;color:var(--text);
+    line-height:1.7;box-shadow:0 4px 16px rgba(0,0,0,0.1);
+}
+.johari-tooltip.show{display:block;animation:collabFadeIn .2s ease-in}
+.johari-tooltip b{color:var(--accent)}
+
+.johari-grid{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px;margin-bottom:16px}
+.johari-cell{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;min-height:120px;display:flex;flex-direction:column}
+.johari-cell-title{font-size:12px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.johari-cell-desc{font-size:11px;color:var(--text-light);margin-bottom:6px}
+.johari-cell.open .johari-cell-title{color:#10b981}
+.johari-cell.hidden-s .johari-cell-title{color:#f59e0b}
+.johari-cell.blind .johari-cell-title{color:#8b5cf6}
+.johari-cell.unknown .johari-cell-title{color:#94a3b8}
+.johari-tags-wrap{max-height:64px;overflow:hidden;transition:max-height .3s ease}
+.johari-tags-wrap.expanded{max-height:600px}
+.johari-tags{display:flex;flex-wrap:wrap;gap:4px}
+.johari-tag{padding:4px 10px;border-radius:12px;font-size:12px;font-weight:500}
+.johari-cell.open .johari-tag{background:#ecfdf5;color:#059669}
+.johari-cell.hidden-s .johari-tag{background:#fffbeb;color:#d97706}
+.johari-cell.blind .johari-tag{background:#f5f3ff;color:#7c3aed}
+.johari-cell.unknown .johari-tag{background:#f1f5f9;color:#64748b}
+.johari-more{
+    display:none;margin-top:6px;padding:0;border:none;background:none;
+    font-size:11px;font-weight:600;color:var(--text-light);cursor:pointer;
+    font-family:inherit;
+}
+.johari-more:hover{color:var(--accent)}
+.johari-more.visible{display:inline-flex;align-items:center;gap:2px}
+
+.match-score{text-align:center;padding:20px;background:var(--accent-dim);border-radius:12px;margin-bottom:16px}
+.match-score .score{font-family:'Jua',cursive;font-size:48px;color:var(--accent)}
+.match-score .label{font-size:13px;color:var(--text-light);margin-top:4px}
+
+.friend-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px}
+.friend-bar-label{min-width:70px;text-align:right;color:var(--text)}
+.friend-bar-fill{height:20px;border-radius:4px;background:var(--accent);transition:width .4s;min-width:2px}
+.friend-bar-count{color:var(--text-light);font-size:12px;min-width:30px}
+
+/* === 호스트 결과 요약 === */
+.host-result-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.host-result-title{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.stat-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.stat-row:last-child{border-bottom:none}
+.stat-value{color:var(--accent);font-weight:700}
+
+/* === 활동 헤더 === */
+.phase-header{text-align:center;margin-bottom:16px}
+.phase-header .phase-label{font-size:12px;color:var(--text-light);font-weight:500}
+.phase-header .phase-title{font-family:'Jua',cursive;font-size:22px;color:var(--text);margin-top:4px}
+
+/* === 제출 버튼 === */
+.submit-area{margin-top:16px;text-align:center}
+
+/* === 결과 하단 액션 버튼 === */
+.result-actions{display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.result-actions .action-btn{
+    flex:1;padding:14px 8px;border:none;border-radius:12px;
+    font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:600;
+    cursor:pointer;transition:all .2s;text-align:center;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.result-actions .action-btn .action-icon{font-size:20px}
+.result-actions .action-btn.save{background:var(--accent);color:#fff;box-shadow:0 4px 14px var(--neon-glow)}
+.result-actions .action-btn.save:active{transform:scale(.97)}
+.result-actions .action-btn.save.saving{opacity:.5;pointer-events:none}
+.result-actions .action-btn.retry{background:var(--green-bg);color:var(--green);border:1px solid #d1fae5}
+.result-actions .action-btn.retry:hover{background:#d1fae5}
+.result-actions .action-btn.home{background:var(--card);color:var(--text-light);border:1px solid var(--border)}
+.result-actions .action-btn.home:hover{border-color:var(--accent);color:var(--accent)}
+
+/* === 결과 탭 === */
+.result-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:4px}
+.result-tab{
+    flex:1;padding:10px 6px;border:none;border-radius:9px;background:transparent;
+    font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:600;
+    color:var(--text-light);cursor:pointer;transition:all .2s;text-align:center;
+}
+.result-tab.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px var(--neon-glow)}
+.result-tab-panel{display:none}
+.result-tab-panel.active{display:block;animation:collabFadeIn .3s ease-in}
+
+/* === 전체 통계 카드 === */
+.spinner-sm{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-right:8px}
+.global-stat-hero{text-align:center;padding:24px 16px;background:linear-gradient(135deg,var(--accent-dim),#e8ecff);border-radius:12px;margin-bottom:16px}
+.global-stat-hero .hero-num{font-family:'Jua',cursive;font-size:42px;color:var(--accent)}
+.global-stat-hero .hero-label{font-size:13px;color:var(--text-light);margin-top:2px}
+.global-stat-row{display:flex;gap:10px;margin-bottom:12px}
+.global-stat-box{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.global-stat-box .gs-num{font-family:'Jua',cursive;font-size:24px;color:var(--accent)}
+.global-stat-box .gs-label{font-size:11px;color:var(--text-light);margin-top:2px}
+</style>
+</head>
+<body>
+
+<div class="collab-container"></div>
+
+<script src="/d_contents/01/common/common-collab.js"></script>
+<script>
+// ============================================================
+//  강점 카드 데이터
+// ============================================================
+var CATEGORIES = [
+    { key: 'personality', name: '성격', icon: '🌟' },
+    { key: 'attitude',    name: '태도', icon: '💎' },
+    { key: 'social',      name: '대인관계', icon: '🤝' }
+];
+
+var STRENGTH_CARDS = [
+    { key:'friendly',     label:'친근해',     cat:'personality' },
+    { key:'quiet',        label:'조용해',     cat:'personality' },
+    { key:'warm',         label:'따뜻해',     cat:'personality' },
+    { key:'affectionate', label:'다정해',     cat:'personality' },
+    { key:'comfortable',  label:'편안해',     cat:'personality' },
+    { key:'calm',         label:'침착해',     cat:'personality' },
+    { key:'serene',       label:'차분해',     cat:'personality' },
+    { key:'delicate',     label:'섬세해',     cat:'personality' },
+    { key:'easygoing2',   label:'털털해',     cat:'personality' },
+    { key:'kind',         label:'친절해',     cat:'attitude' },
+    { key:'sincere',      label:'성실해',     cat:'attitude' },
+    { key:'gentle',       label:'상냥해',     cat:'attitude' },
+    { key:'polite',       label:'예의 있어',  cat:'attitude' },
+    { key:'charming',     label:'애교 있어',  cat:'attitude' },
+    { key:'reliable',     label:'든든해',     cat:'attitude' },
+    { key:'meticulous',   label:'꼼꼼해',     cat:'attitude' },
+    { key:'careful',      label:'신중해',     cat:'attitude' },
+    { key:'loyal',        label:'의리 있어',  cat:'attitude' },
+    { key:'cheerful',     label:'명랑해',     cat:'social' },
+    { key:'powerful',     label:'박력 있어',  cat:'social' },
+    { key:'attractive',   label:'매력 있어',  cat:'social' },
+    { key:'neat',         label:'깔끔해',     cat:'social' },
+    { key:'easygoing',    label:'느긋해',     cat:'social' },
+    { key:'lively',       label:'쾌활해',     cat:'social' },
+    { key:'principled',   label:'소신 있어',  cat:'social' },
+    { key:'funny',        label:'재미있어',   cat:'social' },
+    { key:'straightfwd',  label:'시원시원해', cat:'social' },
+    { key:'confident',    label:'당당해',     cat:'social' },
+    { key:'proactive',    label:'주도적이야', cat:'social' },
+    { key:'cute',         label:'귀여워',     cat:'social' }
+];
+
+var keyToLabel = {};
+STRENGTH_CARDS.forEach(function(c){ keyToLabel[c.key] = c.label; });
+
+// ============================================================
+//  활동 상태
+// ============================================================
+var mySelectedStrengths = [];   // Phase 1에서 선택한 키 배열
+var evalTargets = [];           // Phase 2 평가 대상 [{id, nickname}]
+var evalResults = [];           // Phase 2 평가 결과 [{target_id, strength}]
+var currentEvalIndex = 0;       // 현재 평가 중인 대상 인덱스
+var allAssignments = [];        // 전체 배정 데이터 (호스트용)
+var evalProcessing = false;     // Phase 2 중복 클릭 방지 플래그
+
+// ============================================================
+//  EoCollab 초기화
+// ============================================================
+EoCollab.init({
+    activityId: 'strength_intro',
+    title: '✨ 나를 소개합니다',
+    subtitle: '나의 강점을 발견하고 친구의 시선으로 확인해 보세요!',
+    minCount: 3,
+    maxTargets: 5,
+    phases: [
+        { name: '자기 강점 선택', hostLabel: '강점 선택 중' },
+        { name: '친구 강점 평가', hostLabel: '친구 평가 중' },
+        { name: '결과 확인',      hostLabel: '결과' }
+    ],
+    onPhaseStart: onPhaseStart
+});
+
+// ============================================================
+//  단계 시작 콜백
+// ============================================================
+function onPhaseStart(phase, data) {
+    var el = data.activityEl;
+
+    if (phase === 1) {
+        renderPhase1(el);
+    } else if (phase === 2) {
+        if (EoCollab.state.isHost) {
+            // 호스트: 배정 실행 후 모니터로 돌아감
+            EoCollab.assignTargets(function(assignData) {
+                allAssignments = assignData.assignments;
+                // 호스트는 모니터 화면으로 (EoCollab이 자동 처리)
+            });
+            // 모니터 화면은 EoCollab.enterPhase에서 이미 렌더링됨
+            // 여기서는 학생 케이스만 처리
+        } else {
+            // 학생: 서버에서 배정 데이터 가져오기
+            loadMyTargets(function() {
+                renderPhase2(el);
+            });
+        }
+    } else if (phase >= 3) {
+        // 결과 단계
+        renderResultPhase(el);
+    }
+}
+
+// ============================================================
+//  Phase 1: 자기 강점 선택
+// ============================================================
+function renderPhase1(el) {
+    mySelectedStrengths = [];
+
+    var html = '<div class="phase-header">' +
+        '<div class="phase-label">PHASE 1</div>' +
+        '<div class="phase-title">내가 생각하는 나의 강점</div>' +
+    '</div>' +
+    '<div style="text-align:center;font-size:14px;color:var(--text-light);margin-bottom:12px">' +
+        '나를 가장 잘 표현하는 강점을 <strong style="color:var(--accent)">5개 이상</strong> 골라주세요!' +
+    '</div>' +
+    '<div class="strength-counter">선택: <span class="count" id="p1Count">0</span>개</div>';
+
+    CATEGORIES.forEach(function(cat) {
+        html += '<div class="strength-section-title">' + cat.icon + ' ' + cat.name + '</div>';
+        html += '<div class="strength-grid">';
+        STRENGTH_CARDS.forEach(function(card) {
+            if (card.cat === cat.key) {
+                html += '<div class="strength-card" data-key="' + card.key + '" onclick="toggleStrength(this)">' +
+                    card.label + '</div>';
+            }
+        });
+        html += '</div>';
+    });
+
+    html += '<div class="submit-area">' +
+        '<button class="collab-btn collab-btn-primary" id="p1SubmitBtn" disabled onclick="submitPhase1()">선택 완료</button>' +
+    '</div>';
+
+    el.innerHTML = html;
+}
+
+function toggleStrength(cardEl) {
+    var key = cardEl.getAttribute('data-key');
+    var idx = mySelectedStrengths.indexOf(key);
+    if (idx >= 0) {
+        mySelectedStrengths.splice(idx, 1);
+        cardEl.classList.remove('selected');
+    } else {
+        mySelectedStrengths.push(key);
+        cardEl.classList.add('selected');
+    }
+    var countEl = document.getElementById('p1Count');
+    if (countEl) countEl.textContent = mySelectedStrengths.length;
+    var btn = document.getElementById('p1SubmitBtn');
+    if (btn) btn.disabled = mySelectedStrengths.length < 5;
+}
+
+function submitPhase1() {
+    // 중복 클릭 방지
+    var btn = document.getElementById('p1SubmitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '제출 중...'; }
+
+    EoCollab.submitPhaseData(1, {
+        selected_strengths: mySelectedStrengths
+    });
+}
+
+// ============================================================
+//  Phase 2: 친구 강점 평가
+// ============================================================
+function loadMyTargets(callback) {
+    // 배정 데이터를 서버에서 다시 요청 (결정적 셔플이라 동일 결과)
+    EoCollab.assignTargets(function(data) {
+        // 내 배정 찾기
+        var myId = EoCollab.state.participantId;
+        data.assignments.forEach(function(a) {
+            if (a.participant_id === myId) {
+                evalTargets = a.targets;
+            }
+        });
+        allAssignments = data.assignments;
+        currentEvalIndex = 0;
+        evalResults = [];
+        if (callback) callback();
+    });
+}
+
+function renderPhase2(el) {
+    if (currentEvalIndex >= evalTargets.length) {
+        // 모든 평가 완료 → 제출
+        submitPhase2();
+        return;
+    }
+    // 첫 렌더링 시 플래그 초기화
+    if (currentEvalIndex === 0) evalProcessing = false;
+
+    var target = evalTargets[currentEvalIndex];
+
+    var html = '<div class="phase-header">' +
+        '<div class="phase-label">PHASE 2</div>' +
+        '<div class="phase-title">친구의 강점 고르기</div>' +
+    '</div>' +
+    '<div class="eval-progress">' + (currentEvalIndex + 1) + ' / ' + evalTargets.length + '명</div>' +
+    '<div class="eval-target">' +
+        '<div class="eval-target-label">내가 생각하는</div>' +
+        '<div class="eval-target-name">' + escHtml(target.nickname) + '</div>' +
+        '<div class="eval-target-label">의 강점을 <strong style="color:var(--accent)">한 가지</strong> 골라주세요!</div>' +
+    '</div>';
+
+    CATEGORIES.forEach(function(cat) {
+        html += '<div class="strength-section-title">' + cat.icon + ' ' + cat.name + '</div>';
+        html += '<div class="strength-grid">';
+        STRENGTH_CARDS.forEach(function(card) {
+            if (card.cat === cat.key) {
+                html += '<div class="strength-card" data-key="' + card.key + '" onclick="selectEvalStrength(this,\'' + card.key + '\',' + target.id + ')">' +
+                    card.label + '</div>';
+            }
+        });
+        html += '</div>';
+    });
+
+    el.innerHTML = html;
+}
+
+function selectEvalStrength(cardEl, strengthKey, targetId) {
+    // 중복 클릭 방지: 카드 전환 중 연타 차단
+    if (evalProcessing) return;
+    evalProcessing = true;
+
+    evalResults.push({ target_id: targetId, strength: strengthKey });
+    currentEvalIndex++;
+
+    var el = document.getElementById('screenActivity');
+    if (currentEvalIndex >= evalTargets.length) {
+        submitPhase2();
+    } else {
+        renderPhase2(el);
+        // 다음 화면 렌더링 후 플래그 해제 (약간의 딜레이로 연타 방지)
+        setTimeout(function() { evalProcessing = false; }, 300);
+    }
+}
+
+function submitPhase2() {
+    EoCollab.submitPhaseData(2, {
+        evaluations: evalResults
+    });
+}
+
+// ============================================================
+//  Phase 3+: 결과 화면 (3탭 구조)
+// ============================================================
+var cachedP1 = null;   // Phase 1 데이터 캐시
+var cachedP2 = null;   // Phase 2 데이터 캐시
+var cachedClassData = null;  // 우리 반 집계 캐시
+
+function renderResultPhase(el) {
+    el.innerHTML = '<div style="text-align:center;padding:40px"><div class="waiting-icon" style="font-size:36px">⏳</div><div style="margin-top:12px;color:var(--text-light)">결과를 불러오는 중...</div></div>';
+
+    // Phase 1, 2 데이터를 모두 가져오기
+    EoCollab.getPhaseData(1, function(p1Data) {
+        EoCollab.getPhaseData(2, function(p2Data) {
+            cachedP1 = p1Data.data;
+            cachedP2 = p2Data.data;
+            cachedClassData = computeClassData(cachedP1, cachedP2);
+            renderResultTabs(el);
+        });
+    });
+}
+
+function renderResultTabs(el) {
+    var isHost = EoCollab.state.isHost;
+    // 호스트: 우리 반 / 전체 통계 (2탭, 나의 결과 없음)
+    // 학생:  나의 결과 / 우리 반 / 전체 통계 (3탭)
+    var tabs = '';
+    var panels = '';
+
+    if (!isHost) {
+        tabs += '<button class="result-tab active" onclick="switchResultTab(0)">나의 결과</button>';
+        tabs += '<button class="result-tab" onclick="switchResultTab(1)">우리 반</button>';
+        tabs += '<button class="result-tab" onclick="switchResultTab(2)">전체 통계</button>';
+
+        panels += '<div class="result-tab-panel active" id="resultPanel0">' + buildMyResultHTML() + '</div>';
+        panels += '<div class="result-tab-panel" id="resultPanel1">' + buildClassResultHTML() + '</div>';
+        panels += '<div class="result-tab-panel" id="resultPanel2"><div style="text-align:center;padding:30px;color:var(--text-light)"><span class="spinner-sm"></span> 불러오는 중...</div></div>';
+    } else {
+        tabs += '<button class="result-tab active" onclick="switchResultTab(0)">우리 반</button>';
+        tabs += '<button class="result-tab" onclick="switchResultTab(1)">전체 통계</button>';
+
+        panels += '<div class="result-tab-panel active" id="resultPanel0">' + buildClassResultHTML() + '</div>';
+        panels += '<div class="result-tab-panel" id="resultPanel1"><div style="text-align:center;padding:30px;color:var(--text-light)"><span class="spinner-sm"></span> 불러오는 중...</div></div>';
+    }
+
+    var html = '<div class="phase-header">' +
+        '<div class="phase-label">결과</div>' +
+        '<div class="phase-title">' + (isHost ? '🏫 우리 반 강점 리포트' : escHtml(EoCollab.state.nickname) + '의 강점 프로필') + '</div>' +
+    '</div>' +
+    '<div class="result-tabs" id="resultTabBar">' + tabs + '</div>' +
+    '<div id="resultPanels">' + panels + '</div>' +
+    renderActionButtons();
+
+    el.innerHTML = html;
+
+    // 조해리 셀 넘침 체크 (학생 탭에만 해당)
+    if (!isHost) {
+        checkJohariOverflow();
+    }
+
+    // 전체 통계 비동기 로딩
+    loadGlobalStats();
+}
+
+function switchResultTab(idx) {
+    // 탭 버튼
+    var tabBar = document.getElementById('resultTabBar');
+    if (!tabBar) return;
+    var buttons = tabBar.querySelectorAll('.result-tab');
+    buttons.forEach(function(b, i) {
+        b.classList.toggle('active', i === idx);
+    });
+    // 패널
+    var panels = document.getElementById('resultPanels');
+    if (!panels) return;
+    var ps = panels.querySelectorAll('.result-tab-panel');
+    ps.forEach(function(p, i) {
+        p.classList.toggle('active', i === idx);
+    });
+}
+
+// ============================================================
+//  나의 결과 (학생만)
+// ============================================================
+function buildMyResultHTML() {
+    var myId = EoCollab.state.participantId;
+
+    // 내가 선택한 강점
+    var myStrengths = [];
+    cachedP1.forEach(function(d) {
+        if (d.participant_id === myId) {
+            myStrengths = d.phase_data.selected_strengths || [];
+        }
+    });
+
+    // 친구들이 나에게 선택한 강점
+    var friendPicks = {};
+    cachedP2.forEach(function(d) {
+        if (d.participant_id === myId) return;
+        var evals = d.phase_data.evaluations || [];
+        evals.forEach(function(ev) {
+            if (ev.target_id === myId) {
+                friendPicks[ev.strength] = (friendPicks[ev.strength] || 0) + 1;
+            }
+        });
+    });
+
+    var friendKeys = Object.keys(friendPicks);
+
+    // 조해리의 창 분류
+    var openStrengths = [], hiddenStrengths = [], blindStrengths = [];
+    myStrengths.forEach(function(k) {
+        if (friendPicks[k]) openStrengths.push(k);
+        else hiddenStrengths.push(k);
+    });
+    friendKeys.forEach(function(k) {
+        if (myStrengths.indexOf(k) < 0) blindStrengths.push(k);
+    });
+
+    var matchRate = myStrengths.length > 0
+        ? Math.round(openStrengths.length / myStrengths.length * 100) : 0;
+
+    var friendSorted = friendKeys.map(function(k) {
+        return { key: k, count: friendPicks[k] };
+    }).sort(function(a, b) { return b.count - a.count; });
+    var maxCount = friendSorted.length > 0 ? friendSorted[0].count : 1;
+
+    // HTML
+    var h = '';
+
+    // 일치도
+    h += '<div class="match-score">' +
+        '<div class="score">' + matchRate + '%</div>' +
+        '<div class="label">자기인식 일치도</div>' +
+    '</div>';
+
+    // 미지의 영역: 나도 안 고르고 친구도 안 고른 카드
+    var knownKeys = {};
+    myStrengths.forEach(function(k) { knownKeys[k] = true; });
+    friendKeys.forEach(function(k) { knownKeys[k] = true; });
+    var unknownStrengths = [];
+    STRENGTH_CARDS.forEach(function(c) {
+        if (!knownKeys[c.key]) unknownStrengths.push(c.key);
+    });
+
+    // 조해리의 창
+    h += '<div class="johari-header">🪟 나의 조해리의 창 ' +
+        '<span class="johari-help-btn" onclick="toggleJohariHelp(event)">?</span>' +
+        '<div class="johari-tooltip" id="johariTooltip">' +
+            '<b>조해리의 창</b>이란 심리학자 조셉 루프트와 해리 잉햄이 만든 자기인식 모델이에요.<br><br>' +
+            '<b>열린 강점</b> — 나도 알고, 친구도 아는 나의 모습<br>' +
+            '<b>숨은 강점</b> — 나는 몰랐지만, 친구가 발견해 준 모습<br>' +
+            '<b>나만의 강점</b> — 나는 아는데, 아직 친구에게 보여지지 않은 모습<br>' +
+            '<b>미지의 영역</b> — 아직 발견하지 못한 가능성' +
+        '</div>' +
+    '</div>';
+    h += '<div class="johari-grid">';
+    h += buildJohariCell('open', '✅ 열린 강점', '나도 알고, 친구도 아는', openStrengths, 'jc0');
+    h += buildJohariCell('blind', '🔮 숨은 강점', '나는 몰랐지만, 친구가 발견한', blindStrengths, 'jc1');
+    h += buildJohariCell('hidden-s', '💛 나만의 강점', '나는 아는데, 친구는 안 고른', hiddenStrengths, 'jc2');
+    h += buildJohariCell('unknown', '❓ 미지의 영역', '아직 발견하지 못한 가능성', unknownStrengths, 'jc3');
+    h += '</div>';
+
+    // 바 차트
+    if (friendSorted.length > 0) {
+        h += '<div style="font-size:14px;font-weight:700;margin:16px 0 10px">👀 친구들이 본 나의 강점</div>';
+        friendSorted.forEach(function(item) {
+            var pct = Math.round(item.count / maxCount * 100);
+            h += '<div class="friend-bar">' +
+                '<div class="friend-bar-label">' + (keyToLabel[item.key]||item.key) + '</div>' +
+                '<div style="flex:1;background:var(--border);border-radius:4px;height:20px">' +
+                    '<div class="friend-bar-fill" style="width:' + pct + '%"></div>' +
+                '</div>' +
+                '<div class="friend-bar-count">' + item.count + '명</div>' +
+            '</div>';
+        });
+    }
+
+    return h;
+}
+
+function buildJohariCell(cls, title, desc, items, cellId) {
+    var tagsHtml = items.length > 0
+        ? items.map(function(k){ return '<span class="johari-tag">' + (keyToLabel[k]||k) + '</span>'; }).join('')
+        : '<span style="font-size:12px;color:#bbb">없음</span>';
+
+    return '<div class="johari-cell ' + cls + '">' +
+        '<div class="johari-cell-title">' + title + '</div>' +
+        '<div class="johari-cell-desc">' + desc + '</div>' +
+        '<div class="johari-tags-wrap" id="' + cellId + 'Wrap">' +
+            '<div class="johari-tags">' + tagsHtml + '</div>' +
+        '</div>' +
+        (items.length > 0
+            ? '<button class="johari-more" id="' + cellId + 'More" onclick="toggleJohariMore(\'' + cellId + '\')">▼ 더 보기</button>'
+            : '') +
+    '</div>';
+}
+
+// 셀 렌더링 후 넘침 여부를 체크하고 "더 보기" 표시
+function checkJohariOverflow() {
+    ['jc0','jc1','jc2','jc3'].forEach(function(id) {
+        var wrap = document.getElementById(id + 'Wrap');
+        var btn = document.getElementById(id + 'More');
+        if (!wrap || !btn) return;
+        // scrollHeight > clientHeight이면 넘침
+        if (wrap.scrollHeight > wrap.clientHeight + 2) {
+            btn.classList.add('visible');
+        }
+    });
+}
+
+function toggleJohariMore(cellId) {
+    var wrap = document.getElementById(cellId + 'Wrap');
+    var btn = document.getElementById(cellId + 'More');
+    if (!wrap || !btn) return;
+    var expanded = wrap.classList.toggle('expanded');
+    btn.textContent = expanded ? '▲ 접기' : '▼ 더 보기';
+}
+
+function toggleJohariHelp(e) {
+    e.stopPropagation();
+    var tip = document.getElementById('johariTooltip');
+    if (!tip) return;
+    var showing = tip.classList.toggle('show');
+    // 바깥 클릭 시 닫기
+    if (showing) {
+        setTimeout(function() {
+            document.addEventListener('click', closeJohariHelp);
+        }, 0);
+    }
+}
+function closeJohariHelp() {
+    var tip = document.getElementById('johariTooltip');
+    if (tip) tip.classList.remove('show');
+    document.removeEventListener('click', closeJohariHelp);
+}
+
+// ============================================================
+//  우리 반 통계 (호스트+학생 공통)
+// ============================================================
+function computeClassData(phase1Data, phase2Data) {
+    var allStrengthCount = {};
+    var studentData = [];
+    var totalMatchRate = 0;
+    var studentCount = 0;
+
+    var p1Map = {};
+    phase1Data.forEach(function(d) {
+        if (d.is_host) return;
+        p1Map[d.participant_id] = d.phase_data.selected_strengths || [];
+        (d.phase_data.selected_strengths || []).forEach(function(k) {
+            allStrengthCount[k] = (allStrengthCount[k] || 0) + 1;
+        });
+    });
+
+    var receivedMap = {};
+    phase2Data.forEach(function(d) {
+        if (d.is_host) return;
+        (d.phase_data.evaluations || []).forEach(function(ev) {
+            if (!receivedMap[ev.target_id]) receivedMap[ev.target_id] = {};
+            receivedMap[ev.target_id][ev.strength] = (receivedMap[ev.target_id][ev.strength] || 0) + 1;
+            allStrengthCount[ev.strength] = (allStrengthCount[ev.strength] || 0) + 1;
+        });
+    });
+
+    var participants = EoCollab.state.participants;
+    participants.forEach(function(p) {
+        if (p.is_host) return;
+        var myStr = p1Map[p.id] || [];
+        var received = receivedMap[p.id] || {};
+        var receivedKeys = Object.keys(received);
+
+        var openCount = 0, blindCount = 0;
+        myStr.forEach(function(k) { if (received[k]) openCount++; });
+        receivedKeys.forEach(function(k) { if (myStr.indexOf(k) < 0) blindCount++; });
+
+        var matchRate = myStr.length > 0 ? Math.round(openCount / myStr.length * 100) : 0;
+        totalMatchRate += matchRate;
+        studentCount++;
+
+        studentData.push({
+            nickname: p.nickname,
+            matchRate: matchRate,
+            blindCount: blindCount,
+            topFriendStrength: receivedKeys.length > 0
+                ? receivedKeys.sort(function(a,b){ return received[b]-received[a]; })[0]
+                : null
+        });
+    });
+
+    var avgMatchRate = studentCount > 0 ? Math.round(totalMatchRate / studentCount) : 0;
+
+    var strengthRank = Object.keys(allStrengthCount).map(function(k) {
+        return { key: k, count: allStrengthCount[k] };
+    }).sort(function(a,b) { return b.count - a.count; }).slice(0, 5);
+
+    var totalBlind = 0;
+    studentData.forEach(function(d) { totalBlind += d.blindCount; });
+
+    return {
+        strengthRank: strengthRank,
+        avgMatchRate: avgMatchRate,
+        studentCount: studentCount,
+        totalBlind: totalBlind,
+        studentData: studentData.sort(function(a,b){ return b.matchRate - a.matchRate; })
+    };
+}
+
+function buildClassResultHTML() {
+    var d = cachedClassData;
+    var h = '';
+
+    // 1. TOP5
+    h += '<div class="host-result-card">' +
+        '<div class="host-result-title">🏆 우리 반 대표 강점 TOP5</div>';
+    var medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+    d.strengthRank.forEach(function(item, i) {
+        h += '<div class="stat-row"><span>' + medals[i] + ' ' + (keyToLabel[item.key]||item.key) + '</span><span class="stat-value">' + item.count + '회</span></div>';
+    });
+    if (d.strengthRank.length === 0) h += '<div style="text-align:center;padding:12px;color:#bbb;font-size:13px">데이터 없음</div>';
+    h += '</div>';
+
+    // 2. 일치도
+    h += '<div class="host-result-card">' +
+        '<div class="host-result-title">🪞 자기인식 일치도</div>' +
+        '<div class="stat-row"><span>우리 반 평균</span><span class="stat-value">' + d.avgMatchRate + '%</span></div>' +
+    '</div>';
+
+    // 3. 숨은 강점
+    h += '<div class="host-result-card">' +
+        '<div class="host-result-title">🔮 숨은 강점 발견</div>' +
+        '<div class="stat-row"><span>친구가 발견해 준 숨은 강점</span><span class="stat-value">총 ' + d.totalBlind + '개</span></div>' +
+        '<div class="stat-row"><span>1인당 평균</span><span class="stat-value">' + (d.studentCount > 0 ? (d.totalBlind / d.studentCount).toFixed(1) : 0) + '개</span></div>' +
+    '</div>';
+
+    // 4. 학생별 요약
+    h += '<div class="host-result-card">' +
+        '<div class="host-result-title">📋 학생별 요약</div>';
+    d.studentData.forEach(function(s) {
+        var topStr = s.topFriendStrength ? (keyToLabel[s.topFriendStrength] || '') : '-';
+        h += '<div class="stat-row">' +
+            '<span>' + escHtml(s.nickname) + '</span>' +
+            '<span style="font-size:12px;color:var(--text-light)">일치 ' + s.matchRate + '% · 친구가 본 강점 "' + topStr + '"</span>' +
+        '</div>';
+    });
+    if (d.studentData.length === 0) h += '<div style="text-align:center;padding:12px;color:#bbb;font-size:13px">데이터 없음</div>';
+    h += '</div>';
+
+    return h;
+}
+
+// ============================================================
+//  전체 통계 (API 호출)
+// ============================================================
+function loadGlobalStats() {
+    var isHost = EoCollab.state.isHost;
+    var panelIdx = isHost ? 1 : 2;
+    var panelEl = document.getElementById('resultPanel' + panelIdx);
+    if (!panelEl) return;
+
+    fetch('/d_contents/01/api/collab.php?action=global_stats&activity_id=' + encodeURIComponent(EoCollab.state.activityId))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        panelEl.innerHTML = buildGlobalStatsHTML(data);
+    })
+    .catch(function() {
+        panelEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-light)">전체 통계를 불러올 수 없습니다.</div>';
+    });
+}
+
+function buildGlobalStatsHTML(data) {
+    var h = '';
+
+    // 히어로: 총 참여자 수
+    h += '<div class="global-stat-hero">' +
+        '<div class="hero-num">' + (data.total_participants || 0) + '명</div>' +
+        '<div class="hero-label">지금까지 이 활동에 참여한 학생</div>' +
+    '</div>';
+
+    // 참여 요약
+    h += '<div class="global-stat-row">' +
+        '<div class="global-stat-box">' +
+            '<div class="gs-num">' + (data.total_rooms || 0) + '회</div>' +
+            '<div class="gs-label">진행된 수업</div>' +
+        '</div>' +
+        '<div class="global-stat-box">' +
+            '<div class="gs-num">' + (data.avg_match_rate || 0) + '%</div>' +
+            '<div class="gs-label">평균 자기인식 일치도</div>' +
+        '</div>' +
+    '</div>';
+
+    // 전체 강점 TOP5
+    h += '<div class="host-result-card">' +
+        '<div class="host-result-title">🏆 전체 학생 대표 강점 TOP5</div>';
+    var medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+    (data.top_strengths || []).forEach(function(item, i) {
+        h += '<div class="stat-row"><span>' + medals[i] + ' ' + (keyToLabel[item.key]||item.key) + '</span><span class="stat-value">' + item.count + '회</span></div>';
+    });
+    if (!data.top_strengths || data.top_strengths.length === 0) {
+        h += '<div style="text-align:center;padding:12px;color:#bbb;font-size:13px">아직 데이터가 없습니다</div>';
+    }
+    h += '</div>';
+
+    // 전체 숨은 강점 TOP5
+    h += '<div class="host-result-card">' +
+        '<div class="host-result-title">🔮 가장 많이 발견된 숨은 강점 TOP5</div>';
+    (data.top_blind || []).forEach(function(item, i) {
+        h += '<div class="stat-row"><span>' + medals[i] + ' ' + (keyToLabel[item.key]||item.key) + '</span><span class="stat-value">' + item.count + '회</span></div>';
+    });
+    if (!data.top_blind || data.top_blind.length === 0) {
+        h += '<div style="text-align:center;padding:12px;color:#bbb;font-size:13px">아직 데이터가 없습니다</div>';
+    }
+    h += '</div>';
+
+    return h;
+}
+
+// ============================================================
+//  결과 액션 버튼
+// ============================================================
+function renderActionButtons() {
+    return '<div class="result-actions">' +
+        '<button class="action-btn save" onclick="saveResultImage(this)">' +
+            '<span class="action-icon">📸</span>' +
+            '<span>이미지 저장</span>' +
+        '</button>' +
+        '<button class="action-btn retry" onclick="retryActivity()">' +
+            '<span class="action-icon">🔄</span>' +
+            '<span>다시하기</span>' +
+        '</button>' +
+        '<button class="action-btn home" onclick="goHome()">' +
+            '<span class="action-icon">🏠</span>' +
+            '<span>처음으로</span>' +
+        '</button>' +
+    '</div>';
+}
+
+function saveResultImage(btn) {
+    // 현재 활성 탭 패널만 캡처
+    var activePanel = document.querySelector('.result-tab-panel.active');
+    var el = document.getElementById('screenActivity');
+    if (!el || !activePanel) return;
+
+    btn.classList.add('saving');
+    var origText = btn.querySelector('span:last-child');
+    origText.textContent = '저장 중...';
+
+    // 버튼/탭 숨기고 캡처
+    var actions = el.querySelector('.result-actions');
+    var tabBar = document.getElementById('resultTabBar');
+    if (actions) actions.style.display = 'none';
+    if (tabBar) tabBar.style.display = 'none';
+
+    // 비활성 패널 숨기기 (캡처에 포함 방지)
+    var allPanels = document.querySelectorAll('.result-tab-panel');
+    allPanels.forEach(function(p) {
+        if (!p.classList.contains('active')) p.style.display = 'none';
+    });
+
+    html2canvas(el, {
+        backgroundColor: '#eef2fb',
+        scale: 2,
+        useCORS: true
+    }).then(function(canvas) {
+        // 복원
+        if (actions) actions.style.display = 'flex';
+        if (tabBar) tabBar.style.display = 'flex';
+        allPanels.forEach(function(p) { p.style.display = ''; });
+        btn.classList.remove('saving');
+        origText.textContent = '이미지 저장';
+
+        var link = document.createElement('a');
+        var nick = EoCollab.state.nickname || '결과';
+        link.download = '강점프로필_' + nick + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }).catch(function() {
+        if (actions) actions.style.display = 'flex';
+        if (tabBar) tabBar.style.display = 'flex';
+        allPanels.forEach(function(p) { p.style.display = ''; });
+        btn.classList.remove('saving');
+        origText.textContent = '이미지 저장';
+        alert('이미지 저장에 실패했습니다. 스크린샷을 이용해 주세요.');
+    });
+}
+
+function retryActivity() {
+    if (confirm('현재 결과가 사라집니다. 다시 시작할까요?')) {
+        location.reload();
+    }
+}
+
+function goHome() {
+    var ctx = EoCollab.state.context;
+    if (ctx === 'middle') {
+        location.href = '/d_contents/01/middle/';
+    } else if (ctx === 'high') {
+        location.href = '/d_contents/01/high/';
+    } else {
+        location.href = '/d_contents/01/middle/';
+    }
+}
+
+// ============================================================
+//  유틸리티
+// ============================================================
+function escHtml(str) {
+    var d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+}
+</script>
+</body>
+</html>

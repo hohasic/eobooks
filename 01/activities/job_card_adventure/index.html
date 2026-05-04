@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🃏 직업 카드 어드벤처</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link rel="stylesheet" href="/d_contents/01/common/common-entry.css">
+<style>
+:root{--bg:#eef2fb;--card:#ffffff;--neon:#4361ee;--neon-dim:#3451c7;--neon-glow:rgba(67,97,238,.15);--pink:#ff4da6;--blue:#4da6ff;--yellow:#f59e0b;--purple:#b44dff;--red:#ff4d6a;--text:#1a1a2e;--dim:#64748b;--border:#dde3f0;--correct:#22c55e;--correct-dim:rgba(34,197,94,.12);--correct-glow:rgba(34,197,94,.15)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh;padding:20px;max-width:520px;margin:0 auto}
+.screen.active{display:flex;flex-direction:column}
+.progress-bar{height:4px;background:#dde3f0;border-radius:2px;margin:12px 0 20px;overflow:hidden}
+.progress-bar .fill{height:100%;background:linear-gradient(90deg,var(--neon),var(--blue));transition:width .5s;border-radius:2px}
+.step-pills{display:flex;gap:6px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+.step-pill{padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;background:#e8ecf8;color:var(--dim);transition:all .3s}
+.step-pill.active{background:var(--neon);color:#fff}
+.step-pill.done{background:rgba(67,97,238,.12);color:var(--neon)}
+.btn{padding:14px 32px;border:none;border-radius:12px;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--neon);color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(67,97,238,.3)}
+.btn-secondary{background:#e8ecf8;color:var(--text);border:1px solid #dde3f0}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.module-header{text-align:center;margin-bottom:20px}
+.module-header .icon{font-size:40px;margin-bottom:8px}
+.module-header h2{font-family:'Jua',sans-serif;font-size:1.5rem}
+.module-header p{color:var(--dim);font-size:13px;margin-top:4px}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes popIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.fade-in{animation:fadeInUp .4s ease}
+.pop-in{animation:popIn .3s ease}
+
+.quiz-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0}
+.quiz-item{padding:14px;background:var(--card);border:2px solid #dde3f0;border-radius:14px;cursor:pointer;transition:all .2s;text-align:center;font-size:1rem;line-height:1.4;user-select:none;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.quiz-item:hover{border-color:var(--blue);background:rgba(77,166,255,.06)}
+.quiz-item.selected{border-color:var(--neon);background:var(--neon-glow)}
+.quiz-item.correct{border-color:var(--correct);background:var(--correct-dim)}
+.quiz-item.wrong{border-color:var(--red);background:rgba(255,77,106,.08)}
+.quiz-item .qemoji{font-size:28px;display:block;margin-bottom:6px}
+.quiz-feedback{text-align:center;padding:16px;border-radius:14px;font-size:1rem;line-height:1.6;margin-top:12px;background:var(--correct-glow);border:1px solid var(--correct);color:var(--correct)}
+
+.worldcup-stage{text-align:center;margin-bottom:12px}
+.worldcup-stage .round{font-family:'Jua',sans-serif;font-size:20px;color:var(--yellow)}
+.worldcup-stage .match{color:var(--dim);font-size:13px}
+.vs-container{display:flex;gap:16px;align-items:stretch;margin:20px 0}
+.vs-card{flex:1;padding:24px 16px;background:var(--card);border:2px solid #dde3f0;border-radius:18px;cursor:pointer;transition:all .25s;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:160px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.vs-card:hover{border-color:var(--yellow);transform:scale(1.03)}
+.vs-card .v-emoji{font-size:36px}.vs-card .v-name{font-weight:700;font-size:17px}.vs-card .v-desc{font-size:12px;color:var(--dim);line-height:1.4}
+.vs-card.chosen{border-color:var(--correct);background:var(--correct-glow);transform:scale(1.05)}
+.vs-card.eliminated{opacity:.3;transform:scale(.95);pointer-events:none}
+.vs-divider{display:flex;align-items:center;font-family:'Jua',sans-serif;font-size:24px;color:var(--pink)}
+
+.match-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:12px 16px;background:var(--card);border-radius:12px;border:1px solid #dde3f0;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.match-info .score{font-weight:700;color:var(--neon);font-size:1.2rem}
+.match-info .timer{color:var(--yellow);font-weight:700}
+.match-prompt{text-align:center;padding:14px;background:linear-gradient(135deg,rgba(67,97,238,.08),rgba(67,97,238,.04));border:1px solid #dde3f0;border-radius:14px;margin-bottom:16px}
+.match-prompt .aptitude-name{font-family:'Jua',sans-serif;font-size:20px;color:var(--blue);margin:4px 0}
+.match-prompt .aptitude-desc{font-size:12px;color:var(--dim)}
+.job-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.job-card{padding:16px 12px;background:var(--card);border:2px solid #dde3f0;border-radius:14px;cursor:pointer;transition:all .2s;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.job-card:hover{border-color:var(--blue);transform:scale(1.03)}
+.job-card .jemoji{font-size:28px;margin-bottom:6px}.job-card .jname{font-weight:700;font-size:1rem;margin-bottom:2px}.job-card .jfield{font-size:11px;color:var(--dim)}
+.job-card.disabled{pointer-events:none;opacity:.4}
+.job-card.correct-pick{border-color:var(--correct);background:var(--correct-dim);opacity:1;transform:scale(1.03)}
+.job-card.wrong-pick{border-color:var(--red);background:rgba(255,77,106,.14);opacity:1}
+.collected-bar{margin-top:16px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
+.collected-bar .dot{width:24px;height:24px;border-radius:50%;background:#e8ecf8;border:1px solid #dde3f0;transition:all .3s;font-size:11px;display:flex;align-items:center;justify-content:center}
+.collected-bar .dot.filled{background:var(--correct);border-color:var(--correct);color:#fff}
+
+#result-card{background:linear-gradient(160deg,#f5f8ff 0%,#eef4ff 50%,#f5f8ff 100%);border:1px solid #dde3f0;border-radius:24px;padding:32px 24px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+#result-card::before{content:'';position:absolute;top:-50%;right:-50%;width:100%;height:100%;background:radial-gradient(circle,rgba(67,97,238,.05) 0%,transparent 60%);pointer-events:none}
+.result-header{text-align:center;margin-bottom:24px;position:relative}
+.result-header h2{font-family:'Jua',sans-serif;font-size:24px;margin:8px 0 4px}
+.result-header .student-tag{color:var(--neon);font-size:1rem}
+.result-section{margin-bottom:24px}
+.result-section h3{font-size:1rem;color:var(--dim);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.result-section h3::before{content:'';width:3px;height:14px;background:var(--neon);border-radius:2px}
+.value-podium{display:flex;gap:12px;justify-content:center;align-items:flex-end;margin:16px 0}
+.podium-item{text-align:center;border-radius:14px;flex:1}
+.podium-item.gold{background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,140,66,.1));border:1px solid var(--yellow);order:2;padding:24px 12px}
+.podium-item.silver{background:linear-gradient(135deg,rgba(77,166,255,.1),rgba(77,166,255,.05));border:1px solid var(--blue);order:1;padding:18px 12px}
+.podium-item.bronze{background:linear-gradient(135deg,rgba(180,77,255,.1),rgba(180,77,255,.05));border:1px solid var(--purple);order:3;padding:12px 12px}
+.podium-item .medal{font-size:28px}.podium-item .vname{font-weight:700;font-size:1rem;margin-top:4px}
+.collected-jobs{display:flex;flex-wrap:wrap;gap:8px}
+.cj-tag{padding:6px 14px;background:rgba(67,97,238,.08);border:1px solid #dde3f0;border-radius:20px;font-size:12px}
+.bot-comment{background:#f5f8ff;border-left:3px solid var(--neon);border-radius:0 12px 12px 0;padding:16px;font-size:1rem;line-height:1.7;color:var(--dim)}
+.bot-comment strong{color:var(--neon)}
+.action-buttons{display:flex;gap:8px;margin-top:20px;justify-content:center}
+.action-buttons .btn{flex:1;padding:12px 8px;font-size:0.9rem;white-space:nowrap;justify-content:center;text-align:center}
+.score-big{font-family:'Jua',sans-serif;font-size:48px;color:var(--neon);text-align:center}
+.score-label{text-align:center;color:var(--dim);font-size:13px;margin-bottom:16px}
+
+.result-tabs{display:flex;gap:8px;border-bottom:1px solid #dde3f0;margin-bottom:20px;overflow-x:auto}
+.result-tab{padding:12px 16px;background:none;border:none;color:var(--dim);cursor:pointer;font-weight:600;font-size:13px;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s}
+.result-tab.active{color:var(--neon)}
+.result-tab:hover{color:var(--text)}
+.result-content{display:none}
+.result-content.active{display:block;animation:fadeInUp .3s ease}
+.result-card{background:var(--card);border:1px solid #dde3f0;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.result-section-title{font-size:1rem;font-weight:700;margin-bottom:12px;color:var(--text)}
+.result-stat-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #dde3f0}
+.result-stat-item:last-child{border-bottom:none}
+.result-stat-label{color:var(--dim);font-size:13px}
+.result-stat-value{color:var(--neon);font-weight:700;font-size:1.1rem}
+.result-ranking{display:flex;flex-direction:column;gap:8px}
+.result-rank-item{display:flex;align-items:center;gap:12px;padding:10px 0}
+.result-rank-medal{font-size:18px;min-width:28px;text-align:center}
+.result-rank-name{flex:1;font-size:13px;color:var(--text)}
+.result-rank-value{color:var(--neon);font-weight:700;font-size:13px}
+.result-score{text-align:center;padding:20px 0}
+.result-score-number{font-family:'Jua',sans-serif;font-size:36px;color:var(--neon);margin-bottom:4px}
+.result-score-label{color:var(--dim);font-size:12px}
+
+.empty-state{text-align:center;padding:20px;color:var(--dim);font-size:13px}
+
+#user-badge{display:none;position:fixed;top:0;left:0;right:0;z-index:999;justify-content:center;gap:8px;padding:6px 16px;background:rgba(255,255,255,.95);border-bottom:1px solid #dde3f0;font-size:12px;backdrop-filter:blur(8px);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+#badge-code{color:var(--neon)}
+#badge-school{color:var(--text)}
+#badge-nick{color:var(--text)}
+.badge-dot{color:#dde3f0}
+
+@media(max-width:400px){.title{font-size:26px}.vs-container{flex-direction:column;gap:12px}.vs-divider{transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+
+<div id="user-badge">
+  <span id="badge-code"></span>
+  <span class="badge-dot">·</span>
+  <span id="badge-school"></span>
+  <span class="badge-dot">·</span>
+  <span id="badge-nick"></span>
+</div>
+
+<div id="entryScreen" class="screen active"></div>
+
+<div id="screen-quiz" class="screen">
+    <div class="step-pills"><span class="step-pill active">진로 퀴즈</span><span class="step-pill">가치 월드컵</span><span class="step-pill">카드 매칭</span><span class="step-pill">결과</span></div>
+    <div class="progress-bar"><div class="fill" id="prog-quiz" style="width:0%"></div></div>
+    <div class="module-header"><div class="icon">📝</div><h2>진로 탐색 퀴즈</h2><p>아래 항목 중 '진로'에 해당하는 것을 모두 골라주세요!</p></div>
+    <div class="quiz-grid" id="quiz-grid"></div>
+    <div class="quiz-feedback" id="quiz-feedback" style="display:none"></div>
+    <div style="text-align:center;margin-top:16px"><button class="btn btn-primary" id="btn-quiz-check" onclick="checkQuiz()">✅ 정답 확인</button><button class="btn btn-primary" id="btn-quiz-next" onclick="goToWorldCup()" style="display:none">다음 ➜ 가치 월드컵</button></div>
+</div>
+
+<div id="screen-worldcup" class="screen">
+    <div class="step-pills"><span class="step-pill done">진로 퀴즈</span><span class="step-pill active">가치 월드컵</span><span class="step-pill">카드 매칭</span><span class="step-pill">결과</span></div>
+    <div class="progress-bar"><div class="fill" id="prog-wc" style="width:33%"></div></div>
+    <div class="module-header"><div class="icon">🏆</div><h2>직업 가치 월드컵</h2><p>둘 중 더 중요한 가치를 골라주세요!</p></div>
+    <div class="worldcup-stage"><div class="round" id="wc-round">8강</div><div class="match" id="wc-match">1 / 4</div></div>
+    <div class="vs-container" id="vs-container"></div>
+</div>
+
+<div id="screen-matching" class="screen">
+    <div class="step-pills"><span class="step-pill done">진로 퀴즈</span><span class="step-pill done">가치 월드컵</span><span class="step-pill active">카드 매칭</span><span class="step-pill">결과</span></div>
+    <div class="progress-bar"><div class="fill" id="prog-match" style="width:66%"></div></div>
+    <div class="module-header"><div class="icon">🃏</div><h2>직업 카드 매칭</h2><p>적성 영역에 맞는 직업을 찾아 카드를 수집하자!</p></div>
+    <div class="match-info"><div>수집 카드 <span class="score" id="match-score">0</span> / <span id="match-total">8</span></div><div class="timer" id="match-round">1 / 8</div></div>
+    <div class="match-prompt" id="match-prompt"></div>
+    <div class="job-grid" id="job-grid"></div>
+    <div class="collected-bar" id="collected-bar"></div>
+</div>
+
+<div id="screen-result" class="screen">
+    <div class="result-tabs">
+        <button class="result-tab active" data-tab="myResult" onclick="switchResultTab('myResult')">나의 결과</button>
+        <button class="result-tab" data-tab="groupStats" id="groupStatsTab" onclick="switchResultTab('groupStats')">우리 반 통계</button>
+        <button class="result-tab" data-tab="nationalStats" onclick="switchResultTab('nationalStats')">전체 통계</button>
+    </div>
+
+    <div id="myResult" class="result-content active">
+        <div id="result-card" class="fade-in">
+            <div class="result-header"><h2>직업 탐험 리포트</h2><div class="student-tag" id="result-name"></div></div>
+            <div class="result-section"><h3>진로 이해도</h3><div id="result-quiz"></div></div>
+            <div class="result-section"><h3>나의 직업 가치 TOP 3</h3><div class="value-podium" id="result-podium"></div></div>
+            <div class="result-section"><h3>수집한 직업 카드</h3><div class="score-big" id="result-match-score"></div><div class="score-label">매칭 성공</div><div class="collected-jobs" id="result-jobs"></div></div>
+            <div class="bot-comment" id="bot-comment"></div>
+        </div>
+        <div class="action-buttons"><button class="btn btn-primary" onclick="downloadResult()">📥 이미지 저장</button><button class="btn btn-secondary" onclick="location.reload()">🔄 다시 하기</button><button class="btn btn-secondary" onclick="goHome()">🏠 처음으로</button></div>
+    </div>
+
+    <div id="groupStats" class="result-content">
+        <div class="result-card">
+            <div class="result-section-title">📊 우리 반 참여 현황</div>
+            <div class="result-stat-item"><span class="result-stat-label">참여 인원</span><span class="result-stat-value" id="group-participants">-</span></div>
+            <div class="result-stat-item"><span class="result-stat-label">제출 완료</span><span class="result-stat-value" id="group-submitted">-</span></div>
+        </div>
+        <div class="result-card">
+            <div class="result-section-title">🏆 우리 반 TOP 가치관</div>
+            <div class="result-ranking" id="group-values"></div>
+        </div>
+        <div class="result-card">
+            <div class="result-section-title">💼 우리 반 인기 직업</div>
+            <div class="result-ranking" id="group-jobs"></div>
+        </div>
+        <div class="result-card">
+            <div class="result-section-title">🎯 우리 반 평균 매칭 점수</div>
+            <div class="result-score"><div class="result-score-number" id="group-avg-score">-</div><div class="result-score-label">평균 매칭 점수</div></div>
+        </div>
+        <button class="refresh-btn" id="refreshGroupBtn" onclick="loadGroupStats()">새로고침</button>
+    </div>
+
+    <div id="nationalStats" class="result-content">
+        <div class="result-card">
+            <div class="result-section-title">🌍 전체 참여 현황</div>
+            <div class="result-stat-item"><span class="result-stat-label">전체 참여자</span><span class="result-stat-value" id="national-participants">-</span></div>
+            <div class="result-stat-item"><span class="result-stat-label">나의 1순위 가치 순위</span><span class="result-stat-value" id="national-my-rank">-</span></div>
+        </div>
+        <div class="result-card">
+            <div class="result-section-title">🏆 전체 TOP 가치관</div>
+            <div class="result-ranking" id="national-values"></div>
+        </div>
+        <div class="result-card">
+            <div class="result-section-title">💼 전체 인기 직업</div>
+            <div class="result-ranking" id="national-jobs"></div>
+        </div>
+        <div class="result-card">
+            <div class="result-section-title">🎯 전체 평균 매칭 점수</div>
+            <div class="result-score"><div class="result-score-number" id="national-avg-score">-</div><div class="result-score-label">전체 평균 매칭 점수</div></div>
+        </div>
+        <button class="refresh-btn" id="refreshNationalBtn" onclick="loadNationalStats()">새로고침</button>
+    </div>
+</div>
+
+<script src="/d_contents/01/common/common-entry.js"></script>
+<script>
+/* ===== 원본 게임 데이터 (변경 금지) ===== */
+let state={joinCode:'',studentId:null,studentName:'',studentNo:0,schoolName:'',grade:0,classNum:0,character:'juni',quizCorrect:0,quizTotal:0,valueTop3:[],matchScore:0,collectedJobs:[]};
+
+const quizItems=[
+    {text:'원하는 학교로 진학',emoji:'🏫',isCareer:true},{text:'하고 싶은 일 찾기',emoji:'🔍',isCareer:true},
+    {text:'희망하는 직업 준비',emoji:'💼',isCareer:true},{text:'용돈 관리하기',emoji:'💰',isCareer:true},
+    {text:'활발한 직장 생활',emoji:'🏢',isCareer:true},{text:'취미 활동',emoji:'🎨',isCareer:true},
+    {text:'행복한 가정 꾸리기',emoji:'🏠',isCareer:true},{text:'편안한 노후 설계',emoji:'🌅',isCareer:true},
+    {text:'여가 생활',emoji:'⛱️',isCareer:true},{text:'건강한 몸 가꾸기',emoji:'💪',isCareer:true}
+];
+const allValues=[
+    {id:'stability',name:'안정성',emoji:'🛡️',desc:'오래 안정적으로 일하기'},{id:'pay',name:'보수',emoji:'💰',desc:'경제적 보상이 큰 직업'},
+    {id:'balance',name:'일과 삶의 균형',emoji:'⚖️',desc:'여가 시간이 확보되는 것'},{id:'joy',name:'즐거움',emoji:'😊',desc:'즐겁게 할 수 있는 일'},
+    {id:'belonging',name:'소속감',emoji:'🤝',desc:'조직에 소속되는 느낌'},{id:'growth',name:'자기 계발',emoji:'📈',desc:'계속 성장해 나가는 것'},
+    {id:'challenge',name:'도전성',emoji:'🔥',desc:'새로운 것에 도전하기'},{id:'influence',name:'영향력',emoji:'👑',desc:'사람들을 이끄는 것'},
+    {id:'contribution',name:'사회적 기여',emoji:'🌍',desc:'사회에 봉사하고 기여'},{id:'achievement',name:'성취',emoji:'🏅',desc:'목표를 달성하는 기쁨'},
+    {id:'recognition',name:'사회적 인정',emoji:'⭐',desc:'인정받고 존경받기'},{id:'autonomy',name:'자율성',emoji:'🦅',desc:'스스로 결정하고 선택'}
+];
+const matchRounds=[
+    {aptitude:'언어 능력',desc:'말과 글로 생각과 감정을 표현하는 능력',correct:{name:'방송 작가',emoji:'✍️',field:'미디어'},wrongs:[{name:'건축가',emoji:'🏗️',field:'건설'},{name:'수의사',emoji:'🐾',field:'의료'},{name:'조경사',emoji:'🌳',field:'환경'}]},
+    {aptitude:'수리·논리력',desc:'논리적으로 사고하여 문제를 해결하는 능력',correct:{name:'데이터 분석가',emoji:'📊',field:'IT'},wrongs:[{name:'무대 감독',emoji:'🎭',field:'예술'},{name:'요리사',emoji:'👨‍🍳',field:'요식'},{name:'간호사',emoji:'🏥',field:'의료'}]},
+    {aptitude:'음악 능력',desc:'노래, 악기 연주, 감상할 수 있는 능력',correct:{name:'음향 엔지니어',emoji:'🎧',field:'음악'},wrongs:[{name:'회계사',emoji:'🧮',field:'경영'},{name:'경찰관',emoji:'👮',field:'공무'},{name:'웹 디자이너',emoji:'🖥️',field:'IT'}]},
+    {aptitude:'공간 지각력',desc:'입체적 물체의 위치나 모습을 상상하는 능력',correct:{name:'게임 디자이너',emoji:'🎮',field:'IT'},wrongs:[{name:'상담사',emoji:'💬',field:'복지'},{name:'약사',emoji:'💊',field:'의료'},{name:'기자',emoji:'📰',field:'미디어'}]},
+    {aptitude:'대인 관계 능력',desc:'구성원들과 원만한 관계를 유지하는 능력',correct:{name:'사회복지사',emoji:'🫂',field:'복지'},wrongs:[{name:'프로그래머',emoji:'💻',field:'IT'},{name:'천문학자',emoji:'🔭',field:'과학'},{name:'일러스트레이터',emoji:'🖌️',field:'예술'}]},
+    {aptitude:'창의력',desc:'새롭고 독특한 방식으로 문제를 해결하는 능력',correct:{name:'광고 기획자',emoji:'💡',field:'마케팅'},wrongs:[{name:'법무사',emoji:'⚖️',field:'법률'},{name:'소방관',emoji:'🚒',field:'안전'},{name:'물류 관리사',emoji:'📦',field:'물류'}]},
+    {aptitude:'자연 친화력',desc:'자연에 관심을 가지고 탐구·보호하는 능력',correct:{name:'환경 공학자',emoji:'🌱',field:'환경'},wrongs:[{name:'패션 디자이너',emoji:'👗',field:'패션'},{name:'변호사',emoji:'📜',field:'법률'},{name:'마케터',emoji:'📣',field:'마케팅'}]},
+    {aptitude:'예술 시각 능력',desc:'선, 색, 영상 등에 민감하게 반응하는 능력',correct:{name:'애니메이터',emoji:'🎬',field:'예술'},wrongs:[{name:'공인중개사',emoji:'🏘️',field:'부동산'},{name:'물리치료사',emoji:'🦴',field:'의료'},{name:'세무사',emoji:'📑',field:'경영'}]}
+];
+
+/* ===== 원본 게임 로직 (변경 금지) ===== */
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
+
+// STEP1: 퀴즈
+function buildQuiz(){const grid=document.getElementById('quiz-grid');grid.innerHTML='';quizItems.forEach((q,i)=>{const div=document.createElement('div');div.className='quiz-item';div.innerHTML=`<div class="qemoji">${q.emoji}</div>${q.text}`;div.onclick=()=>div.classList.toggle('selected');grid.appendChild(div)})}
+function checkQuiz(){let c=0;document.querySelectorAll('.quiz-item').forEach((el,i)=>{const q=quizItems[i],sel=el.classList.contains('selected');el.style.pointerEvents='none';if(q.isCareer)el.classList.add('correct');if(q.isCareer&&sel)c++;if(!q.isCareer&&sel)el.classList.add('wrong')});state.quizCorrect=c;state.quizTotal=quizItems.filter(q=>q.isCareer).length;const fb=document.getElementById('quiz-feedback');fb.style.display='block';fb.className='quiz-feedback fade-in';fb.innerHTML=`🤖 <strong>이오봇:</strong> 정답! 진로란 진학, 직업뿐 아니라 <strong>일생 동안 겪게 되는 삶의 과정 전체</strong>를 포함해요. 용돈 관리, 취미, 건강, 여가까지 모두 진로 활동이에요!`;document.getElementById('btn-quiz-check').style.display='none';document.getElementById('btn-quiz-next').style.display='inline-flex'}
+
+// STEP2: 월드컵
+let wcPool=[],wcStage=8,wcIdx=0,wcWinners=[],allWcWinners=[];
+function goToWorldCup(){show('screen-worldcup');wcPool=[...allValues].sort(()=>Math.random()-.5).slice(0,8);wcStage=8;wcIdx=0;wcWinners=[];allWcWinners=[];showWcMatch()}
+function showWcMatch(){const rn={8:'8강',4:'4강',2:'결승'};document.getElementById('wc-round').textContent=rn[wcStage];document.getElementById('wc-match').textContent=`${wcIdx+1} / ${wcStage/2}`;document.getElementById('prog-wc').style.width=(33+((1-wcPool.length/8)*33))+'%';const a=wcPool[wcIdx*2],b=wcPool[wcIdx*2+1];document.getElementById('vs-container').innerHTML=`<div class="vs-card" onclick="pickValue(0)"><div class="v-emoji">${a.emoji}</div><div class="v-name">${a.name}</div><div class="v-desc">${a.desc}</div></div><div class="vs-divider">VS</div><div class="vs-card" onclick="pickValue(1)"><div class="v-emoji">${b.emoji}</div><div class="v-name">${b.name}</div><div class="v-desc">${b.desc}</div></div>`}
+let _wcLock=false;
+function pickValue(idx){if(_wcLock)return;_wcLock=true;const cards=document.querySelectorAll('.vs-card');cards.forEach(c=>c.style.pointerEvents='none');cards[idx].classList.add('chosen');cards[1-idx].classList.add('eliminated');const winner=wcPool[wcIdx*2+idx],loser=wcPool[wcIdx*2+(1-idx)];wcWinners.push(winner);allWcWinners.push(loser);wcIdx++;setTimeout(()=>{if(wcIdx>=wcStage/2){if(wcWinners.length===1){state.valueTop3=[wcWinners[0],allWcWinners[allWcWinners.length-1],allWcWinners[allWcWinners.length-2]];goToMatching();_wcLock=false;return}wcPool=wcWinners;wcWinners=[];wcStage=wcPool.length;wcIdx=0}showWcMatch();_wcLock=false},500)}
+
+// STEP3: 카드 매칭
+let matchIdx=0,matchScoreVal=0,collectedList=[];
+function goToMatching(){show('screen-matching');document.getElementById('match-total').textContent=matchRounds.length;const bar=document.getElementById('collected-bar');bar.innerHTML='';for(let i=0;i<matchRounds.length;i++){const d=document.createElement('div');d.className='dot';d.id=`dot-${i}`;bar.appendChild(d)}showMatchRound()}
+function showMatchRound(){if(matchIdx>=matchRounds.length){finishGame();return}const r=matchRounds[matchIdx];document.getElementById('match-round').textContent=`${matchIdx+1} / ${matchRounds.length}`;document.getElementById('match-score').textContent=matchScoreVal;document.getElementById('prog-match').style.width=(66+(matchIdx/matchRounds.length)*26)+'%';document.getElementById('match-prompt').innerHTML=`<div style="font-size:12px;color:var(--dim)">이 적성에 맞는 직업을 골라주세요!</div><div class="aptitude-name">💡 ${r.aptitude}</div><div class="aptitude-desc">${r.desc}</div>`;const options=[r.correct,...r.wrongs].sort(()=>Math.random()-.5);const grid=document.getElementById('job-grid');grid.innerHTML='';options.forEach(job=>{const div=document.createElement('div');div.className='job-card';div.innerHTML=`<div class="jemoji">${job.emoji}</div><div class="jname">${job.name}</div><div class="jfield">${job.field}</div>`;div.onclick=()=>pickJob(div,job,r.correct);grid.appendChild(div)})}
+let _matchLock=false;
+function pickJob(el,job,correct){if(_matchLock)return;_matchLock=true;document.querySelectorAll('.job-card').forEach(c=>{c.classList.add('disabled');c.style.pointerEvents='none'});if(job.name===correct.name){el.classList.add('correct-pick');matchScoreVal++;collectedList.push(correct);const dot=document.getElementById(`dot-${matchIdx}`);dot.classList.add('filled');dot.textContent=correct.emoji}else{el.classList.add('wrong-pick');document.querySelectorAll('.job-card').forEach(c=>{if(c.querySelector('.jname').textContent===correct.name)c.classList.add('correct-pick')})}document.getElementById('match-score').textContent=matchScoreVal;matchIdx++;setTimeout(()=>{showMatchRound();_matchLock=false},500)}
+
+/* ===== v3 수정: 결과 화면 + API 연동 ===== */
+function finishGame(){
+    show('screen-result');
+    state.matchScore=matchScoreVal;
+    state.collectedJobs=collectedList;
+
+    // v3: EoEntry 닉네임 사용
+    document.getElementById('result-name').textContent=EoEntry.state.nickname;
+
+    document.getElementById('result-quiz').innerHTML=`<div style="text-align:center;font-size:15px">진로 활동 <strong style="color:var(--neon)">${state.quizTotal}개 항목 모두</strong>가 진로에 해당!</div>`;
+    const podium=document.getElementById('result-podium');
+    podium.innerHTML='';
+    const medals=['🥇','🥈','🥉'],cls=['gold','silver','bronze'];
+    state.valueTop3.slice(0,3).forEach((v,i)=>{
+        podium.innerHTML+=`<div class="podium-item ${cls[i]}"><div class="medal">${medals[i]}</div><div class="vname">${v.name}</div></div>`;
+    });
+    document.getElementById('result-match-score').textContent=`${state.matchScore} / ${matchRounds.length}`;
+    const jd=document.getElementById('result-jobs');
+    jd.innerHTML='';
+    collectedList.forEach(j=>{jd.innerHTML+=`<span class="cj-tag">${j.emoji} ${j.name}</span>`});
+
+    const v1=state.valueTop3[0]?.name||'즐거움';
+    const nick=EoEntry.state.nickname;
+    document.getElementById('bot-comment').innerHTML=`🤖 <strong>이오봇의 탐험 리포트</strong><br><br>${nick}님의 직업 가치 1순위는 <strong>${v1}</strong>이에요! 카드 매칭에서 <strong>${matchRounds.length}개 중 ${state.matchScore}개</strong>를 맞혔어요. `+(state.matchScore>=6?`대단해요! 다양한 직업 분야를 잘 알고 있네요! 🌟`:`다양한 직업의 세계를 더 탐색해 보면 좋겠어요! 💪`);
+
+    // v3: 혼자하기면 우리반 탭 숨김
+    if(EoEntry.state.mode==='solo'){
+        document.getElementById('groupStatsTab').style.display='none';
+    }
+
+    saveToServer();
+    if(EoEntry.state.mode==='group'){
+        loadGroupStats();
+    }
+    loadNationalStats();
+}
+
+function switchResultTab(tabName){
+    document.querySelectorAll('.result-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.result-content').forEach(c=>c.classList.remove('active'));
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(tabName).classList.add('active');
+}
+
+function getValueName(valueId){
+    var v=allValues.find(function(val){return val.id===valueId;});
+    return v?v.emoji+' '+v.name:valueId;
+}
+
+async function saveToServer(){
+    if(!EoEntry.state.participantId) return;
+    try{
+        await fetch(EoEntry.API_BASE+'/result.php?action=submit',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                participant_id:EoEntry.state.participantId,
+                activity_id:'job_card_adventure',
+                group_id:EoEntry.state.groupId,
+                result_data:{
+                    quizCorrect:state.quizCorrect,
+                    quizTotal:state.quizTotal,
+                    valueTop3:state.valueTop3.map(v=>v.id),
+                    matchScore:state.matchScore,
+                    collectedJobs:collectedList.map(j=>j.name),
+                    timestamp:new Date().toISOString()
+                }
+            })
+        });
+    }catch(e){console.error('Save error:',e);}
+}
+
+async function loadGroupStats(){
+    EoEntry.refreshCooldown('refreshGroupBtn');
+    try{
+        var res=await fetch(EoEntry.API_BASE+'/result.php?action=group&group_id='+EoEntry.state.groupId+'&activity_id=job_card_adventure');
+        var data=await res.json();
+        document.getElementById('group-participants').textContent=data.total_participants+'명';
+        document.getElementById('group-submitted').textContent=data.submitted_count+'명';
+        document.getElementById('group-avg-score').textContent=data.avg_match_score?data.avg_match_score.toFixed(1):'-';
+
+        var valuesHtml='';
+        var medals=['🥇','🥈','🥉'];
+        (data.top_values||[]).slice(0,3).forEach(function(v,i){
+            valuesHtml+='<div class="result-rank-item"><span class="result-rank-medal">'+(medals[i]||((i+1)+'위'))+'</span><span class="result-rank-name">'+getValueName(v.value_id)+'</span><span class="result-rank-value">'+v.count+'명</span></div>';
+        });
+        document.getElementById('group-values').innerHTML=valuesHtml||'<div class="empty-state">아직 데이터가 없습니다</div>';
+
+        var jobsHtml='';
+        (data.top_jobs||[]).slice(0,3).forEach(function(j,i){
+            jobsHtml+='<div class="result-rank-item"><span class="result-rank-medal">'+(medals[i]||((i+1)+'위'))+'</span><span class="result-rank-name">'+j.job_name+'</span><span class="result-rank-value">'+j.count+'명</span></div>';
+        });
+        document.getElementById('group-jobs').innerHTML=jobsHtml||'<div class="empty-state">아직 데이터가 없습니다</div>';
+    }catch(e){console.error('Group stats error:',e);}
+}
+
+async function loadNationalStats(){
+    EoEntry.refreshCooldown('refreshNationalBtn');
+    try{
+        var res=await fetch(EoEntry.API_BASE+'/result.php?action=national&activity_id=job_card_adventure&participant_id='+EoEntry.state.participantId);
+        var data=await res.json();
+        document.getElementById('national-participants').textContent=data.total_participants+'명';
+        document.getElementById('national-my-rank').textContent=data.my_value_rank?data.my_value_rank+'위':'-';
+        document.getElementById('national-avg-score').textContent=data.avg_match_score?data.avg_match_score.toFixed(1):'-';
+
+        var valuesHtml='';
+        var medals=['🥇','🥈','🥉'];
+        (data.national_values||[]).slice(0,3).forEach(function(v,i){
+            valuesHtml+='<div class="result-rank-item"><span class="result-rank-medal">'+(medals[i]||((i+1)+'위'))+'</span><span class="result-rank-name">'+getValueName(v.value_id)+'</span><span class="result-rank-value">'+v.count+'명</span></div>';
+        });
+        document.getElementById('national-values').innerHTML=valuesHtml||'<div class="empty-state">아직 데이터가 없습니다</div>';
+
+        var jobsHtml='';
+        (data.top_jobs||[]).slice(0,3).forEach(function(j,i){
+            jobsHtml+='<div class="result-rank-item"><span class="result-rank-medal">'+(medals[i]||((i+1)+'위'))+'</span><span class="result-rank-name">'+j.job_name+'</span><span class="result-rank-value">'+j.count+'명</span></div>';
+        });
+        document.getElementById('national-jobs').innerHTML=jobsHtml||'<div class="empty-state">아직 데이터가 없습니다</div>';
+    }catch(e){console.error('National stats error:',e);}
+}
+
+async function downloadResult(){
+    try{
+        const card=document.getElementById('result-card');
+        // fade-in 애니메이션 제거 — html2canvas가 복제 시 애니메이션 재시작하며 반투명 캡처되는 문제 방지
+        card.classList.remove('fade-in');
+        card.style.opacity='1';
+        card.style.transform='none';
+        card.style.animation='none';
+        const dpr=window.devicePixelRatio||1;
+        const badge=document.getElementById('user-badge');
+        const prevBadge=badge?badge.style.display:'';
+        if(badge) badge.style.display='none';
+        const canvas=await html2canvas(card,{
+            backgroundColor:'#f5f8ff',
+            scale:dpr*2,
+            useCORS:true,
+            logging:false,
+            scrollX:0,
+            scrollY:-window.scrollY
+        });
+        if(badge) badge.style.display=prevBadge;
+        const link=document.createElement('a');
+        link.download=`직업카드_${EoEntry.state.nickname}_${new Date().toISOString().slice(0,10)}.png`;
+        link.href=canvas.toDataURL('image/png');
+        link.click();
+    }catch(e){alert('이미지 저장에 실패했습니다.');}
+}
+
+function goHome(){
+    var ctx=EoEntry.state.context;
+    if(ctx==='high'){location.href='/d_contents/01/high/';}
+    else if(ctx==='middle'){location.href='/d_contents/01/middle/';}
+    else{location.href='/d_contents/01/middle/';}
+}
+
+// Initialize with EoEntry
+EoEntry.init({
+    activityId:'job_card_adventure',
+    title:'🃏 직업 카드 어드벤처',
+    subtitle:'진로와 직업의 의미를 탐험하고 나만의 직업 카드를 수집해 보자!',
+    onStart:function(){
+        show('screen-quiz');
+        buildQuiz();
+    }
+});
+
+</script>
+
+</body>
+</html>
